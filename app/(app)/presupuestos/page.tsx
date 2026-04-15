@@ -5,12 +5,14 @@ import { useApp } from "@/lib/store";
 import type { Presupuesto, QuoteStatus } from "@/lib/types";
 
 const QUOTE_STATUS_OPTIONS: { value: QuoteStatus; label: string }[] = [
+  { value: "borrador", label: "Borrador" },
   { value: "enviado", label: "Enviado" },
   { value: "aceptado", label: "Aceptado" },
   { value: "rechazado", label: "Rechazado" },
 ];
 
 const STATUS_COLOR: Record<QuoteStatus, string> = {
+  borrador: "bg-slate-100 text-slate-500",
   enviado: "bg-sky-50 text-sky-700",
   aceptado: "bg-green-50 text-green-700",
   rechazado: "bg-red-50 text-red-600",

@@ -4,16 +4,22 @@ import { useApp } from "@/lib/store";
 import type { PaymentStatus } from "@/lib/types";
 
 const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
-  { value: "pendiente", label: "Pendiente" },
-  { value: "parcial", label: "Parcial" },
-  { value: "pagado", label: "Pagado" },
+  { value: "sin_adelanto",      label: "Sin adelanto" },
+  { value: "adelanto_recibido", label: "Adelanto recibido" },
+  { value: "parcial",           label: "Parcial" },
+  { value: "pagado",            label: "Pagado" },
 ];
 
 const COBRO_COLOR: Record<PaymentStatus, string> = {
-  pendiente: "bg-red-50 text-red-600",
-  parcial: "bg-amber-50 text-amber-700",
-  pagado: "bg-green-50 text-green-700",
+  sin_adelanto:      "bg-slate-100 text-slate-500",
+  adelanto_recibido: "bg-amber-50 text-amber-700",
+  parcial:           "bg-orange-50 text-orange-700",
+  pagado:            "bg-green-50 text-green-700",
 };
+
+function fmt(n: number) {
+  return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 export default function CobrosPage() {
   const { trabajos, clientes, updateTrabajo } = useApp();
@@ -23,7 +29,7 @@ export default function CobrosPage() {
   }
 
   const pendientes = trabajos.filter((t) => t.estadoCobro !== "pagado");
-  const pagados = trabajos.filter((t) => t.estadoCobro === "pagado");
+  const pagados    = trabajos.filter((t) => t.estadoCobro === "pagado");
 
   function setEstadoCobro(id: string, val: PaymentStatus) {
     updateTrabajo(id, { estadoCobro: val });
@@ -37,37 +43,59 @@ export default function CobrosPage() {
           <p className="text-slate-400 text-sm">Ninguno.</p>
         ) : (
           <ul className="space-y-3">
-            {list.map((t) => (
-              <li key={t.id} className="bg-white border border-slate-200 rounded-2xl px-5 py-4 shadow-sm flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 truncate">{t.descripcion}</p>
-                  <p className="text-sm text-slate-500 mt-0.5">{nombreCliente(t.clienteId)} · {t.fecha}</p>
-                  <p className="text-sm font-bold text-slate-700 mt-1">
-                    {t.precio > 0 ? `${t.precio.toLocaleString("es-ES")} €` : "—"}
-                  </p>
-                </div>
-                <select
-                  value={t.estadoCobro}
-                  onChange={(e) => setEstadoCobro(t.id, e.target.value as PaymentStatus)}
-                  className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-[#1558d4] cursor-pointer ${COBRO_COLOR[t.estadoCobro]}`}
-                >
-                  {PAYMENT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </li>
-            ))}
+            {list.map((t) => {
+              const pendiente = Math.max(0, t.precio - t.adelanto);
+              return (
+                <li key={t.id} className="bg-white border border-slate-200 rounded-2xl px-4 py-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800 truncate">{t.descripcion}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{nombreCliente(t.clienteId)} · {t.fecha}</p>
+                    </div>
+                    <select
+                      value={t.estadoCobro}
+                      onChange={(e) => setEstadoCobro(t.id, e.target.value as PaymentStatus)}
+                      className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-[#1558d4] cursor-pointer ${COBRO_COLOR[t.estadoCobro]}`}
+                    >
+                      {PAYMENT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</p>
+                      <p className="text-sm font-bold text-slate-800 mt-0.5">{t.precio > 0 ? `${fmt(t.precio)} €` : "—"}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Adelanto</p>
+                      <p className="text-sm font-bold text-amber-600 mt-0.5">{t.adelanto > 0 ? `${fmt(t.adelanto)} €` : "—"}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Pendiente</p>
+                      <p className={`text-sm font-bold mt-0.5 ${pendiente > 0 ? "text-red-500" : "text-green-600"}`}>
+                        {t.precio > 0 ? `${fmt(pendiente)} €` : "—"}
+                      </p>
+                    </div>
+                  </div>
+                  {t.adelanto > 0 && t.metodoPagoAdelanto && (
+                    <p className="text-[11px] text-slate-400 mt-2 capitalize">
+                      Adelanto: {t.metodoPagoAdelanto}{t.fechaAdelanto ? ` · ${t.fechaAdelanto}` : ""}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
     );
   }
 
-  const total = trabajos.reduce((acc, t) => acc + (t.precio || 0), 0);
-  const cobrado = trabajos
-    .filter((t) => t.estadoCobro === "pagado")
-    .reduce((acc, t) => acc + (t.precio || 0), 0);
-  const pendienteTotal = total - cobrado;
+  const totalFacturado  = trabajos.reduce((s, t) => s + (t.precio   || 0), 0);
+  const totalAdelantos  = trabajos.reduce((s, t) => s + (t.adelanto  || 0), 0);
+  const totalPendiente  = trabajos.reduce((s, t) => s + Math.max(0, (t.precio || 0) - (t.adelanto || 0)), 0);
+  const totalCobrado    = trabajos.filter((t) => t.estadoCobro === "pagado").reduce((s, t) => s + (t.precio || 0), 0);
 
   return (
     <div className="max-w-2xl mx-auto space-y-8">
@@ -77,18 +105,22 @@ export default function CobrosPage() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-xs text-slate-500 font-medium">Total facturado</p>
-          <p className="text-xl font-bold text-slate-900 mt-1">{total.toLocaleString("es-ES")} €</p>
+          <p className="text-xl font-bold text-slate-900 mt-1">{fmt(totalFacturado)} €</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-          <p className="text-xs text-slate-500 font-medium">Cobrado</p>
-          <p className="text-xl font-bold text-green-600 mt-1">{cobrado.toLocaleString("es-ES")} €</p>
+          <p className="text-xs text-slate-500 font-medium">Adelantos recibidos</p>
+          <p className="text-xl font-bold text-amber-600 mt-1">{fmt(totalAdelantos)} €</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
-          <p className="text-xs text-slate-500 font-medium">Pendiente</p>
-          <p className="text-xl font-bold text-red-500 mt-1">{pendienteTotal.toLocaleString("es-ES")} €</p>
+          <p className="text-xs text-slate-500 font-medium">Importe pendiente</p>
+          <p className="text-xl font-bold text-red-500 mt-1">{fmt(totalPendiente)} €</p>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-xs text-slate-500 font-medium">Pagado completo</p>
+          <p className="text-xl font-bold text-green-600 mt-1">{fmt(totalCobrado)} €</p>
         </div>
       </div>
 
@@ -97,3 +129,4 @@ export default function CobrosPage() {
     </div>
   );
 }
+

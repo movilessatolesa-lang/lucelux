@@ -13,9 +13,10 @@ const WORK_STATUS_LABEL: Record<WorkStatus, string> = {
 };
 
 const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
-  pendiente: "Pendiente",
-  parcial: "Parcial",
-  pagado: "Pagado",
+  sin_adelanto:      "Sin adelanto",
+  adelanto_recibido: "Adelanto recibido",
+  parcial:           "Parcial",
+  pagado:            "Pagado",
 };
 
 interface StatCardProps {
@@ -46,7 +47,7 @@ export default function DashboardPage() {
   ).length;
   const terminados = trabajos.filter((t) => t.estado === "terminado").length;
   const cobrosPendientes = trabajos.filter(
-    (t) => t.estadoCobro === "pendiente" || t.estadoCobro === "parcial"
+    (t) => t.estadoCobro === "sin_adelanto" || t.estadoCobro === "adelanto_recibido" || t.estadoCobro === "parcial"
   ).length;
 
   const recientes = [...trabajos]

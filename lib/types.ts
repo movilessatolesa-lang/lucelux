@@ -5,17 +5,39 @@ export type WorkStatus =
   | "en_instalacion"
   | "terminado";
 
-export type QuoteStatus = "enviado" | "aceptado" | "rechazado";
+export type QuoteStatus = "borrador" | "enviado" | "aceptado" | "rechazado";
 
-export type PaymentStatus = "pendiente" | "parcial" | "pagado";
+export type PaymentStatus =
+  | "sin_adelanto"
+  | "adelanto_recibido"
+  | "parcial"
+  | "pagado";
+
+export type MetodoPago =
+  | "efectivo"
+  | "transferencia"
+  | "tarjeta"
+  | "bizum"
+  | "cheque"
+  | "otro";
+
+export type TipoCliente = "particular" | "empresa";
 
 export interface Cliente {
   id: string;
   nombre: string;
   telefono: string;
+  email: string;
   direccion: string;
+  ciudad: string;
+  codigoPostal: string;
+  tipo: TipoCliente;
+  dniNif: string;
   notas: string;
-  creadoEn: string; // ISO date string
+  tags: string[];
+  recurrente: boolean;
+  problematico: boolean;
+  creadoEn: string;
 }
 
 export interface Trabajo {
@@ -24,7 +46,10 @@ export interface Trabajo {
   descripcion: string;
   medidas: string;
   precio: number;
-  fecha: string; // ISO date string
+  adelanto: number;
+  fechaAdelanto: string;
+  metodoPagoAdelanto: MetodoPago | "";
+  fecha: string;
   notas: string;
   estado: WorkStatus;
   estadoCobro: PaymentStatus;
