@@ -1,10 +1,14 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AppProvider } from "@/lib/store";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lucelux",
+  title: "Lucelux — Gestión de trabajos",
   description: "Gestión de trabajos para carpinteros de aluminio e instaladores",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d1e6b",
 };
 
 export default function RootLayout({

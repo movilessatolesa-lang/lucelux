@@ -49,7 +49,7 @@ export default function CobrosPage() {
                 <select
                   value={t.estadoCobro}
                   onChange={(e) => setEstadoCobro(t.id, e.target.value as PaymentStatus)}
-                  className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer ${COBRO_COLOR[t.estadoCobro]}`}
+                  className={`shrink-0 text-xs font-semibold px-3 py-2 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-[#1558d4] cursor-pointer ${COBRO_COLOR[t.estadoCobro]}`}
                 >
                   {PAYMENT_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>

@@ -71,7 +71,7 @@ export default function DashboardPage() {
         <StatCard
           label="En curso"
           value={enCurso}
-          color="text-blue-600"
+          color="text-[#1558d4]"
           href="/trabajos?estado=en_curso"
         />
         <StatCard
@@ -92,7 +92,7 @@ export default function DashboardPage() {
       <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h2 className="font-semibold text-slate-800">Trabajos recientes</h2>
-          <Link href="/trabajos" className="text-sm text-blue-600 hover:underline">
+          <Link href="/trabajos" className="text-sm text-[#1558d4] hover:underline">
             Ver todos
           </Link>
         </div>
@@ -107,7 +107,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-slate-400 mt-0.5">{t.fecha}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs bg-[#eef4ff] text-[#1558d4] px-2 py-0.5 rounded-full font-medium">
                     {WORK_STATUS_LABEL[t.estado]}
                   </span>
                   <span

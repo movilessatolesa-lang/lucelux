@@ -43,7 +43,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
           required
           value={form.nombre}
           onChange={(e) => set("nombre", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           placeholder="Nombre del cliente"
         />
       </div>
@@ -55,7 +55,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
           type="tel"
           value={form.telefono}
           onChange={(e) => set("telefono", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           placeholder="612 345 678"
         />
       </div>
@@ -66,7 +66,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
         <input
           value={form.direccion}
           onChange={(e) => set("direccion", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           placeholder="Calle, número, ciudad"
         />
       </div>
@@ -78,14 +78,14 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
           value={form.notas}
           onChange={(e) => set("notas", e.target.value)}
           rows={3}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4] resize-none"
           placeholder="Observaciones adicionales…"
         />
       </div>
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors text-base"
+          className="flex-1 bg-[#1558d4] hover:bg-[#0e46b8] text-white font-semibold py-3 rounded-xl transition-colors text-base"
         >
           {initial ? "Guardar cambios" : "Crear cliente"}
         </button>

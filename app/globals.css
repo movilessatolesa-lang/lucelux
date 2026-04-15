@@ -1,15 +1,29 @@
 @import "tailwindcss";
 
+/* ── Lucelux Corporate Palette ─────────────────────────────────────────── */
+/* Logo: "LUCE" deep navy #0d1e6b · "LUX" silver #8fa3bb                  */
+/* Icon: bright electric blue #1a5ce8 · chrome silver #a8bdd0              */
+
 :root {
-  --ll-bg: #f4f6f9;
-  --ll-sidebar: #1e2535;
-  --ll-sidebar-hover: #2d3651;
-  --ll-accent: #3b82f6;
-  --ll-accent-dark: #2563eb;
-  --ll-surface: #ffffff;
-  --ll-border: #e2e8f0;
-  --ll-text: #0f172a;
-  --ll-muted: #64748b;
+  /* Brand blues */
+  --ll-navy:        #0d1e6b;   /* "LUCE" dark navy */
+  --ll-blue:        #1558d4;   /* active / accent blue */
+  --ll-blue-bright: #2a7fff;   /* icon electric blue highlight */
+  --ll-silver:      #8fa3bb;   /* "LUX" silver */
+
+  /* UI surfaces */
+  --ll-bg:          #eef2f9;   /* page background – light blue tint */
+  --ll-sidebar:     #0d1e6b;   /* sidebar = brand navy */
+  --ll-sidebar-nav: #0a1859;   /* slightly deeper nav bg */
+  --ll-sidebar-hover: #162680; /* hover on nav items */
+  --ll-surface:     #ffffff;
+  --ll-border:      #dae0ed;
+  --ll-text:        #0d1020;
+  --ll-muted:       #5c6d8a;
+
+  /* Legacy aliases kept for compatibility */
+  --ll-accent:      var(--ll-blue);
+  --ll-accent-dark: #0e46b8;
 }
 
 * {

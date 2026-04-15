@@ -88,7 +88,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
         <select
           value={form.clienteId}
           onChange={(e) => set("clienteId", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
         >
           <option value="">— Sin cliente —</option>
           {clientes.map((c) => (
@@ -102,7 +102,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           required
           value={form.descripcion}
           onChange={(e) => set("descripcion", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           placeholder="Ej. Ventana corredera aluminio"
         />
       </div>
@@ -112,7 +112,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           <input
             value={form.medidas}
             onChange={(e) => set("medidas", e.target.value)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
             placeholder="150×120 cm"
           />
         </div>
@@ -124,7 +124,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
             step={0.01}
             value={form.precio}
             onChange={(e) => set("precio", parseFloat(e.target.value) || 0)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           />
         </div>
       </div>
@@ -134,7 +134,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           type="date"
           value={form.fecha}
           onChange={(e) => set("fecha", e.target.value)}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -143,7 +143,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           <select
             value={form.estado}
             onChange={(e) => set("estado", e.target.value as WorkStatus)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           >
             {WORK_STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -155,7 +155,7 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           <select
             value={form.estadoCobro}
             onChange={(e) => set("estadoCobro", e.target.value as PaymentStatus)}
-            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4]"
           >
             {PAYMENT_STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -169,12 +169,12 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           value={form.notas}
           onChange={(e) => set("notas", e.target.value)}
           rows={3}
-          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full border border-slate-300 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-[#1558d4] resize-none"
           placeholder="Observaciones…"
         />
       </div>
       <div className="flex gap-3 pt-2">
-        <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors text-base">
+        <button type="submit" className="flex-1 bg-[#1558d4] hover:bg-[#0e46b8] text-white font-semibold py-3 rounded-xl transition-colors text-base">
           {initial ? "Guardar cambios" : "Crear trabajo"}
         </button>
         <button type="button" onClick={onCancel} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition-colors text-base">
@@ -219,7 +219,7 @@ export default function TrabajosPage() {
         </div>
         <button
           onClick={() => setMode("create")}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
+          className="bg-[#1558d4] hover:bg-[#0e46b8] text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
         >
           + Nuevo trabajo
         </button>

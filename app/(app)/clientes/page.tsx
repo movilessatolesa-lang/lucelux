@@ -39,7 +39,7 @@ export default function ClientesPage() {
         </div>
         <button
           onClick={() => setMode("create")}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
+          className="bg-[#1558d4] hover:bg-[#0e46b8] text-white font-semibold px-5 py-3 rounded-xl transition-colors text-sm"
         >
           + Nuevo cliente
         </button>
