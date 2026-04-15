@@ -1,0 +1,18 @@
+- [x] Verify that the copilot-instructions.md file in the .github directory is created.
+- [x] Clarify Project Requirements
+- [x] Scaffold the Project
+- [x] Customize the Project
+- [x] Install Required Extensions
+- [ ] Compile the Project
+- [x] Create and Run Task
+- [ ] Launch the Project
+- [x] Ensure Documentation is Complete
+
+- Project type: Next.js app using the App Router.
+- Language: TypeScript.
+- Styling: Tailwind CSS.
+- Linting: ESLint via the Next.js flat config.
+- Package manager: npm.
+- Current limitation: the VS Code task runner could not execute the scaffold or build commands because no terminal was available in this session.
+- Install attempt: `npm install` could not run for the same reason because the VS Code task runner still has no terminal available in this session.
+- Launch attempt: `npm run dev` could not start because the VS Code task runner still has no terminal available, and dependencies have not been installed yet.

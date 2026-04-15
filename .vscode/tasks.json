@@ -1,0 +1,91 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Scaffold Next.js app",
+			"type": "shell",
+			"command": "npx",
+			"args": [
+				"create-next-app@latest",
+				".",
+				"--ts",
+				"--tailwind",
+				"--eslint",
+				"--app",
+				"--use-npm",
+				"--import-alias",
+				"@/*"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Install dependencies",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Run Next.js dev server",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"run",
+				"dev"
+			],
+			"isBackground": true
+		},
+		{
+			"label": "Install dependencies",
+			"type": "shell",
+			"command": "npm",
+			"args": [
+				"install"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Validate terminal",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"echo",
+				"terminal-ready"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Git push to GitHub",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"remote",
+				"set-url",
+				"origin",
+				"https://github.com/movilessatolesa-lang/lucelux.git"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Git push origin main",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"push",
+				"-u",
+				"origin",
+				"main"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "Git force push main",
+			"type": "shell",
+			"command": "git push -u origin main --force",
+			"isBackground": false
+		}
+	]
+}
