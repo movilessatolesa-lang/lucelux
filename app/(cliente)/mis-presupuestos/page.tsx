@@ -22,7 +22,7 @@ export default function ClientePresupuestosPage() {
           {presupuestos.map((p) => (
             <Link
               key={p.id}
-              href={`/presupuestos/${p.id}`}
+              href={`/mis-presupuestos/${p.id}`}
               className="bg-white border border-slate-200 rounded-2xl p-4 hover:shadow-md transition-shadow block"
             >
               <div className="flex items-center justify-between gap-4">

@@ -34,8 +34,11 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirigir a dashboard
-      router.push("/dashboard");
+      // Esperar un poco para asegurar que localStorage se actualiza
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      
+      // Recargar la página para reinicializar el contexto
+      window.location.href = "/dashboard";
     } finally {
       setCargando(false);
     }
@@ -63,18 +66,20 @@ export default function LoginPage() {
       // Hacer login automático
       const loginResult = login(emailRegistro, passwordRegistro);
       if (loginResult.exito) {
-        router.push("/dashboard");
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        window.location.href = "/dashboard";
       }
     } finally {
       setCargando(false);
     }
   };
 
-  const handleDemoLogin = () => {
+  const handleDemoLogin = async () => {
     crearUsariosDemo();
     const resultado = login("demo@lucelux.com", "demo123");
     if (resultado.exito) {
-      router.push("/dashboard");
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      window.location.href = "/dashboard";
     }
   };
 

@@ -159,7 +159,7 @@ export function crearUsariosDemo(): void {
 
   const usuariosDemo: Usuario[] = [
     {
-      id: uid(),
+      id: "usr_demo_001",
       nombre: "Demo Usuario",
       email: "demo@lucelux.com",
       empresa: "LUCELUX",

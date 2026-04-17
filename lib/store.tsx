@@ -652,6 +652,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     crearUsariosDemo();
   }, []);
 
+  // Escuchar cambios de sesión en localStorage
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const usuarioActualizado = obtenerUsuarioActual();
+      setUsuarioActual(usuarioActualizado);
+    };
+
+    // Escuchar cambios en el storage
+    window.addEventListener("storage", handleStorageChange);
+
+    // También revisar periódicamente (para cambios en la misma pestaña)
+    const interval = setInterval(() => {
+      const usuarioActualizado = obtenerUsuarioActual();
+      if (usuarioActualizado?.id !== usuarioActual?.id) {
+        setUsuarioActual(usuarioActualizado);
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [usuarioActual?.id]);
+
   // Registrar en historial
   const registrarHistorial = useCallback(
     (

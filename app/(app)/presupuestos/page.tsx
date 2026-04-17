@@ -64,6 +64,26 @@ export default function PresupuestosPage() {
     }
   };
 
+  const handleEnviarCliente = (p: typeof presupuestos[0]) => {
+    const cliente = clientes.find((c) => c.id === p.clienteId);
+    if (!cliente) return;
+    
+    const linkPublico = `${window.location.origin}/presupuestos/${p.id}/cliente`;
+    const email = cliente.email;
+    
+    // Actualizar estado a "enviado"
+    updatePresupuesto(p.id, {
+      ...p,
+      estado: "enviado",
+    });
+    
+    // Copiar al clipboard
+    navigator.clipboard.writeText(linkPublico);
+    
+    // Mostrar modal con info de envío
+    alert(`✓ Presupuesto marcado como enviado.\n\nLink copiado al portapapeles:\n${linkPublico}\n\nEnvía este link a ${email}`);
+  };
+
   const presupuestoDetalle = detalleId ? presupuestos.find((p) => p.id === detalleId) : null;
 
   const sorted = [...presupuestos].sort((a, b) =>
@@ -137,6 +157,12 @@ export default function PresupuestosPage() {
                 </div>
 
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleEnviarCliente(p)}
+                    className="px-3 py-2 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+                  >
+                    📧 Enviar a cliente
+                  </button>
                   <button
                     onClick={() => setEditingId(p.id)}
                     className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
