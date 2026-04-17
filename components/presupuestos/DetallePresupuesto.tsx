@@ -184,6 +184,7 @@ export function DetallePresupuesto({
           {presupuesto.estadoFirma === "aceptado" && (
             <SeguimientoObraAdmin
               presupuesto={presupuesto}
+              cliente={cliente}
               onUpdate={handleActualizarSeguimiento}
             />
           )}

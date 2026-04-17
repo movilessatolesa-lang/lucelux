@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Presupuesto, HitoSeguimiento, EstadoSeguimiento } from "@/lib/types";
+import type { Presupuesto, HitoSeguimiento, EstadoSeguimiento, Cliente } from "@/lib/types";
+import { enviarNotificacionSeguimiento } from "@/lib/notificaciones";
 
 interface SeguimientoObraAdminProps {
   presupuesto: Presupuesto;
+  cliente?: Cliente | null;
   onUpdate: (nuevoSeguimiento: HitoSeguimiento[]) => void;
 }
 
@@ -20,13 +22,15 @@ const ETAPAS: { estado: EstadoSeguimiento; label: string; icon: string }[] = [
   { estado: "entregado", label: "Entregado", icon: "🎉" },
 ];
 
-export function SeguimientoObraAdmin({ presupuesto, onUpdate }: SeguimientoObraAdminProps) {
+export function SeguimientoObraAdmin({ presupuesto, cliente, onUpdate }: SeguimientoObraAdminProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<{
     fecha: string;
     notas: string;
     completado: boolean;
   } | null>(null);
+  const [enviandoNotificacion, setEnviandoNotificacion] = useState(false);
+  const [notificacionStatus, setNotificacionStatus] = useState<{ tipo: 'exito' | 'error' | 'neutral'; mensaje: string } | null>(null);
 
   const seguimiento = presupuesto.seguimiento || [];
 
@@ -39,26 +43,45 @@ export function SeguimientoObraAdmin({ presupuesto, onUpdate }: SeguimientoObraA
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingId || !editData) return;
 
+    const hitoActualizado = {
+      ...seguimiento.find((h) => h.id === editingId)!,
+      fecha: editData.fecha || seguimiento.find((h) => h.id === editingId)?.fecha,
+      notas: editData.notas || seguimiento.find((h) => h.id === editingId)?.notas,
+      completado: editData.completado,
+    };
+
     const nuevoSeguimiento = seguimiento.map((h) =>
-      h.id === editingId
-        ? {
-            ...h,
-            fecha: editData.fecha || h.fecha,
-            notas: editData.notas || h.notas,
-            completado: editData.completado,
-          }
-        : h
+      h.id === editingId ? hitoActualizado : h
     );
 
     onUpdate(nuevoSeguimiento);
+
+    // Enviar notificación al cliente si aceptamos o cambia estado
+    if (cliente?.telefono && hitoActualizado.completado && hitoActualizado.completado !== seguimiento.find((h) => h.id === editingId)?.completado) {
+      setEnviandoNotificacion(true);
+      const resultado = await enviarNotificacionSeguimiento(
+        cliente.telefono,
+        hitoActualizado,
+        cliente.nombre
+      );
+      setNotificacionStatus({
+        tipo: resultado.exito ? 'exito' : 'error',
+        mensaje: resultado.mensaje,
+      });
+      setEnviandoNotificacion(false);
+
+      // Limpiar mensaje después de 4 segundos
+      setTimeout(() => setNotificacionStatus(null), 4000);
+    }
+
     setEditingId(null);
     setEditData(null);
   };
 
-  const handleMarkAsCompleted = (index: number) => {
+  const handleMarkAsCompleted = async (index: number) => {
     const nuevoSeguimiento = seguimiento.map((h, i) => ({
       ...h,
       completado: i <= index,
@@ -66,6 +89,24 @@ export function SeguimientoObraAdmin({ presupuesto, onUpdate }: SeguimientoObraA
     }));
 
     onUpdate(nuevoSeguimiento);
+
+    // Enviar notificación al cliente
+    if (cliente?.telefono && nuevoSeguimiento[index]) {
+      setEnviandoNotificacion(true);
+      const resultado = await enviarNotificacionSeguimiento(
+        cliente.telefono,
+        nuevoSeguimiento[index],
+        cliente.nombre
+      );
+      setNotificacionStatus({
+        tipo: resultado.exito ? 'exito' : 'error',
+        mensaje: resultado.mensaje,
+      });
+      setEnviandoNotificacion(false);
+
+      // Limpiar mensaje después de 4 segundos
+      setTimeout(() => setNotificacionStatus(null), 4000);
+    }
   };
 
   if (!seguimiento || seguimiento.length === 0) {
@@ -78,7 +119,24 @@ export function SeguimientoObraAdmin({ presupuesto, onUpdate }: SeguimientoObraA
 
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4">
-      <h3 className="font-semibold text-slate-900">Editar Seguimiento de Obra</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-semibold text-slate-900">Editar Seguimiento de Obra</h3>
+        {cliente?.telefono && (
+          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">📱 {cliente.telefono}</span>
+        )}
+      </div>
+
+      {notificacionStatus && (
+        <div className={`p-3 rounded-lg text-sm font-medium ${
+          notificacionStatus.tipo === 'exito'
+            ? 'bg-green-100 text-green-800 border border-green-200'
+            : notificacionStatus.tipo === 'error'
+            ? 'bg-red-100 text-red-800 border border-red-200'
+            : 'bg-slate-100 text-slate-800 border border-slate-200'
+        }`}>
+          {notificacionStatus.tipo === 'exito' ? '✅' : notificacionStatus.tipo === 'error' ? '❌' : 'ℹ️'} {notificacionStatus.mensaje}
+        </div>
+      )}
 
       <div className="space-y-3 max-h-96 overflow-y-auto">
         {seguimiento.map((hito, idx) => {
@@ -183,9 +241,10 @@ export function SeguimientoObraAdmin({ presupuesto, onUpdate }: SeguimientoObraA
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={handleSave}
-                      className="flex-1 px-3 py-2 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors font-semibold"
+                      disabled={enviandoNotificacion}
+                      className="flex-1 px-3 py-2 text-xs bg-green-600 hover:bg-green-700 disabled:bg-slate-400 text-white rounded transition-colors font-semibold disabled:cursor-not-allowed"
                     >
-                      Guardar
+                      {enviandoNotificacion ? '⏳ Enviando...' : 'Guardar'}
                     </button>
                     <button
                       onClick={() => {
