@@ -1,8 +1,9 @@
 "use client";
 
-import { useApp } from "@/lib/store";
+import { useApp, resetearDatosDemo } from "@/lib/store";
 import type { WorkStatus, PaymentStatus } from "@/lib/types";
 import Link from "next/link";
+import { useState } from "react";
 
 const WORK_STATUS_LABEL: Record<WorkStatus, string> = {
   pendiente: "Pendiente",
@@ -40,6 +41,14 @@ function StatCard({ label, value, color, href }: StatCardProps) {
 
 export default function DashboardPage() {
   const { trabajos } = useApp();
+  const [reseteando, setReseteando] = useState(false);
+
+  const handleResetearDatos = async () => {
+    if (confirm("¿Estás seguro? Esto limpiará todos los datos y cargará los datos de demo originales.")) {
+      setReseteando(true);
+      setTimeout(() => resetearDatosDemo(), 300);
+    }
+  };
 
   const pendientes = trabajos.filter((t) => t.estado === "pendiente").length;
   const enCurso = trabajos.filter(
@@ -56,9 +65,18 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">Resumen de tu actividad</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-slate-500 text-sm mt-1">Resumen de tu actividad</p>
+        </div>
+        <button
+          onClick={handleResetearDatos}
+          disabled={reseteando}
+          className="px-4 py-2 text-sm rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {reseteando ? "Cargando..." : "🔄 Resetear datos"}
+        </button>
       </div>
 
       {/* Stats */}

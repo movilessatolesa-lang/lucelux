@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { obtenerUsuarioActual, logout } from "@/lib/auth";
+import { useState, useEffect } from "react";
+import type { Usuario } from "@/lib/types";
 
 const NAV_ITEMS = [
   { href: "/dashboard",    label: "Dashboard",    icon: "⊞" },
@@ -34,23 +37,35 @@ function LogoMark() {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+
+  useEffect(() => {
+    const usuarioActual = obtenerUsuarioActual();
+    setUsuario(usuarioActual);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <>
       {/* ── Desktop sidebar ─────────────────────────────────────────── */}
       <aside
         className="hidden md:flex flex-col w-56 shrink-0 min-h-screen text-white"
-        style={{ background: "linear-gradient(180deg, #0d1e6b 0%, #091545 100%)" }}
+        style={{ background: "linear-gradient(180deg, #475569 0%, #334155 100%)" }}
       >
         {/* Brand header */}
-        <div className="px-4 py-5 border-b border-white/10 flex items-center gap-3">
+        <div className="px-4 py-5 border-b border-white/15 flex items-center gap-3">
           <LogoMark />
           <div className="leading-tight">
             <div className="font-extrabold tracking-tight text-base">
               <span className="text-white">LUCE</span>
-              <span style={{ color: "#8fa3bb" }}>LUX</span>
+              <span style={{ color: "#cbd5e1" }}>LUX</span>
             </div>
-            <p className="text-[10px] font-medium tracking-wide" style={{ color: "#6b83b0" }}>
+            <p className="text-[10px] font-medium tracking-wide" style={{ color: "#94a3b8" }}>
               CARPINTERÍA DE ALUMINIO
             </p>
           </div>
@@ -67,11 +82,11 @@ export default function Sidebar() {
                 className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
                 style={
                   active
-                    ? { background: "#1558d4", color: "#ffffff", boxShadow: "0 2px 8px rgba(21,88,212,0.45)" }
-                    : { color: "rgba(255,255,255,0.65)" }
+                    ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
+                    : { color: "rgba(255,255,255,0.75)" }
                 }
                 onMouseEnter={(e) => {
-                  if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.08)";
+                  if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)";
                 }}
                 onMouseLeave={(e) => {
                   if (!active) (e.currentTarget as HTMLElement).style.background = "transparent";
@@ -84,9 +99,40 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-4 py-4 border-t border-white/10">
-          <p className="text-[10px]" style={{ color: "#4a5e8a" }}>© 2026 Lucelux</p>
+        {/* Usuario Profile + Logout */}
+        <div className="px-4 py-4 space-y-3 border-t border-white/15">
+          {usuario && (
+            <div className="text-sm space-y-1">
+              <p className="text-white font-semibold truncate">{usuario.nombre}</p>
+              <p className="text-[11px]" style={{ color: "#94a3b8" }}>
+                {usuario.email}
+              </p>
+              {usuario.empresa && (
+                <p className="text-[11px]" style={{ color: "#64748b" }}>
+                  {usuario.empresa}
+                </p>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={handleLogout}
+            className="w-full px-3 py-2 text-sm font-medium rounded-lg transition-colors"
+            style={{
+              background: "rgba(239, 68, 68, 0.15)",
+              color: "#fca5a5",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "rgba(239, 68, 68, 0.25)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.background = "rgba(239, 68, 68, 0.15)";
+            }}
+          >
+            🚪 Cerrar sesión
+          </button>
+
+          <p className="text-[10px]" style={{ color: "#64748b" }}>© 2026 Lucelux</p>
         </div>
       </aside>
     </>

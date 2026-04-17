@@ -10,8 +10,13 @@ import { Modal } from "@/components/Modal";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) =>
-  n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt = (n?: number | null) => {
+  if (typeof n !== "number" || Number.isNaN(n)) return "-";
+  return n.toLocaleString("es-ES", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 // ── label / colour maps ───────────────────────────────────────────────────────
 
@@ -441,7 +446,7 @@ export default function ClienteDetailPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <p className="font-bold text-slate-800 text-sm">{fmt(p.importe)}€</p>
+                  <p className="font-bold text-slate-800 text-sm">{fmt(p.importeTotal)}€</p>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${QUOTE_COLOR[p.estado]}`}
                   >
