@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { PresupuestoVistaCliente } from "@/components/presupuestos/PresupuestoVistaCliente";
+import { SeguimientoObra } from "@/components/presupuestos/SeguimientoObra";
 import { Modal } from "@/components/Modal";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
 import type { Presupuesto, Cliente } from "@/lib/types";
@@ -141,8 +142,28 @@ export default function ClientePresupuestoPublicoPage() {
   const [metodoSeleccionado, setMetodoSeleccionado] = useState("tarjeta");
 
   useEffect(() => {
-    // Cargar presupuesto
-    const presupuestoEncontrado = SEED_PRESUPUESTOS.find((p) => p.id === presupuestoId);
+    // Cargar presupuestos y clientes desde localStorage
+    let presupuestosGuardados: Presupuesto[] = [];
+    let clientesGuardados: Cliente[] = [];
+    
+    if (typeof window !== "undefined") {
+      const presupuestosJson = localStorage.getItem("lucelux_presupuestos");
+      const clientesJson = localStorage.getItem("lucelux_clientes");
+      
+      try {
+        presupuestosGuardados = presupuestosJson ? JSON.parse(presupuestosJson) : SEED_PRESUPUESTOS;
+        clientesGuardados = clientesJson ? JSON.parse(clientesJson) : SEED_CLIENTES;
+      } catch (e) {
+        presupuestosGuardados = SEED_PRESUPUESTOS;
+        clientesGuardados = SEED_CLIENTES;
+      }
+    } else {
+      presupuestosGuardados = SEED_PRESUPUESTOS;
+      clientesGuardados = SEED_CLIENTES;
+    }
+
+    // Buscar presupuesto
+    const presupuestoEncontrado = presupuestosGuardados.find((p) => p.id === presupuestoId);
     
     if (!presupuestoEncontrado) {
       setError("Presupuesto no encontrado");
@@ -151,8 +172,8 @@ export default function ClientePresupuestoPublicoPage() {
 
     setPresupuesto(presupuestoEncontrado);
 
-    // Cargar cliente
-    const clienteEncontrado = SEED_CLIENTES.find((c) => c.id === presupuestoEncontrado.clienteId);
+    // Buscar cliente
+    const clienteEncontrado = clientesGuardados.find((c) => c.id === presupuestoEncontrado.clienteId);
     if (clienteEncontrado) {
       setCliente(clienteEncontrado);
     }
@@ -255,6 +276,11 @@ export default function ClientePresupuestoPublicoPage() {
               onPagar={handlePagar}
               onDescargarPDF={handleDescargarPDF}
             />
+
+            {/* Seguimiento de Obra */}
+            {presupuesto.estadoFirma === "aceptado" && (
+              <SeguimientoObra seguimiento={presupuesto.seguimiento} />
+            )}
 
             {/* Detalles de materiales */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6">

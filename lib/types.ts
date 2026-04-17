@@ -84,6 +84,29 @@ export interface LineaPresupuesto {
   ivaLinea: number; // % aplicada a esta línea (por si acaso)
 }
 
+// ── Seguimiento de obra ──────────────────────────────────────────────────────
+
+export type EstadoSeguimiento =
+  | "aceptado"
+  | "pendiente_material"
+  | "material_disponible"
+  | "en_fabricacion"
+  | "fabricacion_lista"
+  | "pendiente_cita"
+  | "cita_confirmada"
+  | "en_instalacion"
+  | "finalizado"
+  | "entregado";
+
+export interface HitoSeguimiento {
+  id: string;
+  estado: EstadoSeguimiento;
+  descripcion: string;
+  fecha?: string;
+  completado: boolean;
+  notas?: string;
+}
+
 // ── Presupuesto expandido ────────────────────────────────────────────────────
 
 export interface Presupuesto {
@@ -109,6 +132,9 @@ export interface Presupuesto {
   urlFirma?: string; // token único
   estadoFirma: "pendiente" | "aceptado" | "rechazado";
   fechaFirma?: string;
+  
+  // Seguimiento de obra
+  seguimiento?: HitoSeguimiento[];
   
   // Auditoría
   notas: string;
