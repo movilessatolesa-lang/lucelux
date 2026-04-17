@@ -1,4 +1,8 @@
-import type { LineaPresupuesto, Presupuesto } from "@/lib/types";
+import type { LineaPresupuesto, Presupuesto, HitoSeguimiento, EstadoSeguimiento } from "@/lib/types";
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 /**
  * Calcula el total de una línea de presupuesto
@@ -183,4 +187,31 @@ export function getEstatusVencimiento(
   if (dias < 0) return "vencido";
   if (dias <= 7) return "proxima";
   return "valida";
+}
+
+/**
+ * Genera los 9 hitos de seguimiento por defecto
+ * Se usa cuando se marca un presupuesto como "aceptado"
+ */
+export function generarHitosSeguimientoDefecto(): HitoSeguimiento[] {
+  const estados: { estado: EstadoSeguimiento; descripcion: string }[] = [
+    { estado: "aceptado", descripcion: "Presupuesto aceptado por el cliente" },
+    { estado: "pendiente_material", descripcion: "Esperando disponibilidad de materiales" },
+    { estado: "material_disponible", descripcion: "Materiales listos en taller" },
+    { estado: "en_fabricacion", descripcion: "En proceso de fabricación" },
+    { estado: "fabricacion_lista", descripcion: "Fabricación completada" },
+    { estado: "pendiente_cita", descripcion: "Esperando confirmación de cita de instalación" },
+    { estado: "cita_confirmada", descripcion: "Cita de instalación confirmada" },
+    { estado: "en_instalacion", descripcion: "Equipo en obra realizando instalación" },
+    { estado: "entregado", descripcion: "Obra completada y entregada al cliente" },
+  ];
+
+  return estados.map((item, idx) => ({
+    id: `seg_${uid()}`,
+    estado: item.estado,
+    descripcion: item.descripcion,
+    completado: idx === 0, // Solo el primero (aceptado) está completado
+    fecha: idx === 0 ? new Date().toISOString().split("T")[0] : undefined,
+    notas: undefined,
+  }));
 }

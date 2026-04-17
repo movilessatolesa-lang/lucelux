@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import type { Cliente, Trabajo, Presupuesto, Material, PlantillaPresupuesto, Usuario, HistorialEntrada } from "@/lib/types";
 import { obtenerUsuarioActual, crearUsariosDemo } from "@/lib/auth";
+import { generarHitosSeguimientoDefecto } from "@/lib/presupuesto-utils";
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -857,8 +858,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updatePresupuesto = useCallback(
     (id: string, data: Partial<Omit<Presupuesto, "id" | "creadoEn">>) => {
       const presupuestoAnterior = presupuestos.find((p) => p.id === id);
+      
+      // Si se marca como aceptado y no tiene seguimiento, generar hitos automáticamente
+      let dataFinal = data;
+      if (data.estadoFirma === "aceptado" && presupuestoAnterior && !presupuestoAnterior.seguimiento?.length) {
+        dataFinal = {
+          ...data,
+          seguimiento: generarHitosSeguimientoDefecto(),
+        };
+      }
+      
       setPresupuestos((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...data } : p))
+        prev.map((p) => (p.id === id ? { ...p, ...dataFinal } : p))
       );
       if (presupuestoAnterior) {
         registrarHistorial("presupuesto", id, data.titulo || presupuestoAnterior.titulo, "actualizar", {
