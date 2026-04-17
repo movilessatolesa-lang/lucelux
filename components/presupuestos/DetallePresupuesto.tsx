@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Presupuesto, Cliente } from "@/lib/types";
+import type { Presupuesto, Cliente, HitoSeguimiento } from "@/lib/types";
 import { useApp } from "@/lib/store";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
 import { BotonesAccion } from "./BotonesAccion";
+import { SeguimientoObraAdmin } from "./SeguimientoObraAdmin";
 
 interface DetallePresupuestoProps {
   presupuesto: Presupuesto;
@@ -40,6 +41,12 @@ export function DetallePresupuesto({
       estadoFirma: estado,
       fechaFirma: new Date().toISOString(),
       estado: estado === "aceptado" ? "aceptado" : "rechazado",
+    });
+  };
+
+  const handleActualizarSeguimiento = (nuevoSeguimiento: HitoSeguimiento[]) => {
+    onActualizar({
+      seguimiento: nuevoSeguimiento,
     });
   };
 
@@ -172,6 +179,14 @@ export function DetallePresupuesto({
             onActualizarEstado={handleActualizarEstado}
             onGuardarPlantilla={handleGuardarPlantilla}
           />
+
+          {/* Panel de Seguimiento (si presupuesto aceptado) */}
+          {presupuesto.estadoFirma === "aceptado" && (
+            <SeguimientoObraAdmin
+              presupuesto={presupuesto}
+              onUpdate={handleActualizarSeguimiento}
+            />
+          )}
 
           {/* Botón cerrar */}
           <button

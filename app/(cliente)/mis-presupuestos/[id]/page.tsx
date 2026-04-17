@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useApp } from "@/lib/store";
 import { useParams } from "next/navigation";
 import { PresupuestoVistaCliente } from "@/components/presupuestos/PresupuestoVistaCliente";
+import { SeguimientoObra } from "@/components/presupuestos/SeguimientoObra";
 import { Modal } from "@/components/Modal";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
 
@@ -112,6 +113,11 @@ export default function ClientePresupuestoDetalleEditablePage() {
             onPagar={handlePagar}
             onDescargarPDF={handleDescargarPDF}
           />
+
+          {/* Seguimiento de Obra */}
+          {presupuesto.estadoFirma === "aceptado" && (
+            <SeguimientoObra seguimiento={presupuesto.seguimiento} />
+          )}
 
           {/* Detalles de materiales */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6">
