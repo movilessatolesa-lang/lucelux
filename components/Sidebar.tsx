@@ -71,17 +71,13 @@ export default function Sidebar() {
         style={{ background: "linear-gradient(180deg, #475569 0%, #334155 100%)" }}
       >
         {/* Brand header */}
-        <div className="px-4 py-5 border-b border-white/15 flex items-center gap-3">
-          <LogoMark />
-          <div className="leading-tight">
-            <div className="font-extrabold tracking-tight text-base">
-              <span className="text-white">LUCE</span>
-              <span style={{ color: "#cbd5e1" }}>LUX</span>
-            </div>
-            <p className="text-[10px] font-medium tracking-wide" style={{ color: "#94a3b8" }}>
-              CARPINTERÍA DE ALUMINIO
-            </p>
-          </div>
+        <div className="px-4 py-4 border-b border-white/15 flex items-center justify-center">
+          <img
+            src="/logo-lucelux.jpg"
+            alt="Lucelux Carpintería de Aluminio"
+            className="w-full object-contain rounded-lg"
+            style={{ maxHeight: 72, maxWidth: 180 }}
+          />
         </div>
 
         {/* Navigation */}
