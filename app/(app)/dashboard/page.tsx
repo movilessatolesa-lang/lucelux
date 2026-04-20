@@ -1,9 +1,9 @@
 "use client";
 
-import { useApp, resetearDatosDemo } from "@/lib/store";
-import type { WorkStatus, PaymentStatus } from "@/lib/types";
+import { useEffect, useState } from "react";
+import { getTrabajos, getPresupuestos, getClientes } from "@/lib/db";
+import type { Trabajo, Presupuesto, Cliente, WorkStatus, PaymentStatus } from "@/lib/types";
 import Link from "next/link";
-import { useState } from "react";
 
 const WORK_STATUS_LABEL: Record<WorkStatus, string> = {
   pendiente: "Pendiente",
@@ -39,17 +39,19 @@ function StatCard({ label, value, color, href }: StatCardProps) {
   );
 }
 
+
 export default function DashboardPage() {
-  const { trabajos } = useApp();
-  const [reseteando, setReseteando] = useState(false);
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
 
-  const handleResetearDatos = async () => {
-    if (confirm("¿Estás seguro? Esto limpiará todos los datos y cargará los datos de demo originales.")) {
-      setReseteando(true);
-      setTimeout(() => resetearDatosDemo(), 300);
-    }
-  };
+  useEffect(() => {
+    getTrabajos().then(setTrabajos).catch(console.error);
+    getPresupuestos().then(setPresupuestos).catch(console.error);
+    getClientes().then(setClientes).catch(console.error);
+  }, []);
 
+  // Trabajos
   const pendientes = trabajos.filter((t) => t.estado === "pendiente").length;
   const enCurso = trabajos.filter(
     (t) => t.estado === "aprobado" || t.estado === "en_fabricacion" || t.estado === "en_instalacion"
@@ -58,10 +60,17 @@ export default function DashboardPage() {
   const cobrosPendientes = trabajos.filter(
     (t) => t.estadoCobro === "sin_adelanto" || t.estadoCobro === "adelanto_recibido" || t.estadoCobro === "parcial"
   ).length;
+  const trabajosRecientes = [...trabajos].sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1)).slice(0, 5);
 
-  const recientes = [...trabajos]
-    .sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1))
-    .slice(0, 5);
+  // Presupuestos
+  const presupuestosActivos = presupuestos.filter((p) => p.estado !== "rechazado").length;
+  const presupuestosAceptados = presupuestos.filter((p) => p.estado === "aceptado").length;
+  const presupuestosPendientes = presupuestos.filter((p) => p.estado === "enviado").length;
+  const importeTotal = presupuestos.reduce((acc, p) => acc + (p.importeTotal || 0), 0);
+  const presupuestosRecientes = [...presupuestos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1)).slice(0, 5);
+
+  // Clientes
+  const clientesRecientes = [...clientes].sort((a, b) => (a.creadoEn < b.creadoEn ? 1 : -1)).slice(0, 5);
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -70,13 +79,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
           <p className="text-slate-500 text-sm mt-1">Resumen de tu actividad</p>
         </div>
-        <button
-          onClick={handleResetearDatos}
-          disabled={reseteando}
-          className="px-4 py-2 text-sm rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {reseteando ? "Cargando..." : "🔄 Resetear datos"}
-        </button>
       </div>
 
       {/* Stats */}
@@ -107,40 +109,20 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Recent works */}
+      {/* Clientes recientes */}
       <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="font-semibold text-slate-800">Trabajos recientes</h2>
-          <Link href="/trabajos" className="text-sm text-[#1558d4] hover:underline">
-            Ver todos
-          </Link>
+          <h2 className="font-semibold text-slate-800">Clientes recientes</h2>
+          <Link href="/clientes" className="text-sm text-[#1558d4] hover:underline">Ver todos</Link>
         </div>
-        {recientes.length === 0 ? (
-          <p className="text-slate-400 text-sm px-5 py-6">Sin trabajos todavía.</p>
+        {clientesRecientes.length === 0 ? (
+          <p className="text-slate-400 text-sm px-5 py-6">Sin clientes todavía.</p>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {recientes.map((t) => (
-              <li key={t.id} className="flex items-center justify-between px-5 py-4 gap-4">
-                <div className="min-w-0">
-                  <p className="font-medium text-slate-800 truncate">{t.descripcion}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{t.fecha}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className="text-xs bg-[#eef4ff] text-[#1558d4] px-2 py-0.5 rounded-full font-medium">
-                    {WORK_STATUS_LABEL[t.estado]}
-                  </span>
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      t.estadoCobro === "pagado"
-                        ? "bg-green-50 text-green-700"
-                        : t.estadoCobro === "parcial"
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-red-50 text-red-600"
-                    }`}
-                  >
-                    {PAYMENT_STATUS_LABEL[t.estadoCobro]}
-                  </span>
-                </div>
+          <ul>
+            {clientesRecientes.map((c) => (
+              <li key={c.id} className="px-5 py-3 border-b border-slate-100 last:border-0 flex justify-between items-center">
+                <span className="font-medium text-slate-700">{c.nombre}</span>
+                <span className="text-xs text-slate-500">{c.ciudad}</span>
               </li>
             ))}
           </ul>
@@ -149,3 +131,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+

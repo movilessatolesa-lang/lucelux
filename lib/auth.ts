@@ -98,6 +98,14 @@ export function login(
     return { exito: false, error: "Usuario o contraseña incorrectos" };
   }
 
+  // Permitir acceso demo especial para cliente@demo.com
+  if (email === "cliente@demo.com" && password === "demo123") {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(SESION_ACTUAL_KEY, JSON.stringify(usuario));
+    }
+    return { exito: true, usuario };
+  }
+
   // Comparación simple (en producción usar bcrypt.compare)
   const passwordValido = password.includes(email.substring(0, 3)) || email === "demo@lucelux.com";
 
@@ -143,8 +151,24 @@ export function logout(): void {
  * Crear usuarios de demo
  */
 export function crearUsariosDemo(): void {
-  const usuarios = obtenerUsuarios();
-  if (usuarios.length > 0) {
+  let usuarios = obtenerUsuarios();
+
+  // Garantizar siempre que el usuario demo tiene ID fijo (eliminar y recrear si el ID no coincide)
+  const existente = usuarios.find((u) => u.email === "cliente@demo.com");
+  if (!existente || existente.id !== "usr_cliente_demo_001") {
+    usuarios = usuarios.filter((u) => u.email !== "cliente@demo.com");
+    usuarios.push({
+      id: "usr_cliente_demo_001",
+      nombre: "Cliente Demo",
+      email: "cliente@demo.com",
+      passwordHash: hashPassword("demo123"),
+      activo: true,
+      creadoEn: now(),
+    });
+    guardarUsuarios(usuarios);
+  }
+
+  if (usuarios.length > 1) {
     // Verificar si el admin Jonathan existe, si no crearlo
     const adminJonathan = usuarios.find((u) => u.email === "jonalucena48@gmail.com");
     if (!adminJonathan) {
@@ -189,7 +213,7 @@ export function crearUsariosDemo(): void {
     },
   ];
 
-  guardarUsuarios(usuariosDemo);
+  guardarUsuarios([...usuarios, ...usuariosDemo.filter(u => !usuarios.find(ex => ex.email === u.email))]);
 }
 
 /**

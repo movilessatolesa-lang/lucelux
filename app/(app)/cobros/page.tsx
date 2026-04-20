@@ -1,7 +1,8 @@
 "use client";
 
-import { useApp } from "@/lib/store";
-import type { PaymentStatus } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Trabajo, Cliente, PaymentStatus } from "@/lib/types";
+import { getTrabajos, getClientes, updateTrabajo as dbUpdateTrabajo } from "@/lib/db";
 
 const PAYMENT_OPTIONS: { value: PaymentStatus; label: string }[] = [
   { value: "sin_adelanto",      label: "Sin adelanto" },
@@ -22,7 +23,13 @@ function fmt(n: number) {
 }
 
 export default function CobrosPage() {
-  const { trabajos, clientes, updateTrabajo } = useApp();
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+
+  useEffect(() => {
+    getTrabajos().then(setTrabajos).catch(console.error);
+    getClientes().then(setClientes).catch(console.error);
+  }, []);
 
   function nombreCliente(id: string) {
     return clientes.find((c) => c.id === id)?.nombre ?? "—";
@@ -31,8 +38,9 @@ export default function CobrosPage() {
   const pendientes = trabajos.filter((t) => t.estadoCobro !== "pagado");
   const pagados    = trabajos.filter((t) => t.estadoCobro === "pagado");
 
-  function setEstadoCobro(id: string, val: PaymentStatus) {
-    updateTrabajo(id, { estadoCobro: val });
+  async function setEstadoCobro(id: string, val: PaymentStatus) {
+    await dbUpdateTrabajo(id, { estadoCobro: val });
+    setTrabajos((prev) => prev.map((t) => t.id === id ? { ...t, estadoCobro: val } : t));
   }
 
   function renderList(list: typeof trabajos, title: string) {

@@ -55,6 +55,9 @@ export interface Trabajo {
   notas: string;
   estado: WorkStatus;
   estadoCobro: PaymentStatus;
+  horaInicio?: string;          // "09:00" — hora de inicio de instalación
+  horaFin?: string;             // "14:00" — hora de fin de instalación
+  notasInstalacion?: string;    // materiales a llevar, acceso, etc.
   creadoEn: string;
 }
 
@@ -132,6 +135,9 @@ export interface Presupuesto {
   urlFirma?: string; // token único
   estadoFirma: "pendiente" | "aceptado" | "rechazado";
   fechaFirma?: string;
+
+  // Pago anticipado
+  porcentajeAdelanto: number; // % a cobrar al aceptar (ej: 50)
   
   // Seguimiento de obra
   seguimiento?: HitoSeguimiento[];
@@ -153,6 +159,7 @@ export interface PlantillaPresupuesto {
   ivaGlobalPredeterminado: number;
   creadoEn: string;
 }
+
 // ── Usuario / Autenticación ─────────────────────────────────────────────────
 
 export interface Usuario {

@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { obtenerUsuarioActual, logout } from "@/lib/auth";
+import { usePathname } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
-import type { Usuario } from "@/lib/types";
+import { useRouter } from "next/navigation";
 
 const NAV_ITEMS = [
   { href: "/dashboard",    label: "Dashboard",    icon: "⊞" },
   { href: "/clientes",     label: "Clientes",     icon: "👤" },
   { href: "/trabajos",     label: "Trabajos",     icon: "🔧" },
   { href: "/presupuestos", label: "Presupuestos", icon: "📋" },
+  { href: "/agenda",       label: "Agenda",       icon: "📅" },
   { href: "/cobros",       label: "Cobros",       icon: "💰" },
+  { href: "/alertas",      label: "Alertas",      icon: "🔔" },
+  { href: "/analitica",    label: "Analítica",    icon: "📊" },
+  { href: "/plantillas",   label: "Plantillas",   icon: "📄" },
+  { href: "/config-pago",  label: "Config. Pago", icon: "⚙️" },
 ];
 
 /** SVG logo mark — window + blinds icon using corporate colours */
@@ -38,16 +43,24 @@ function LogoMark() {
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const usuarioActual = obtenerUsuarioActual();
-    setUsuario(usuarioActual);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        setUserEmail(user.email ?? null);
+        setUserName(user.user_metadata?.nombre ?? user.email?.split("@")[0] ?? null);
+      }
+    });
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push("/login");
+    router.refresh();
   };
 
   return (
@@ -101,17 +114,12 @@ export default function Sidebar() {
 
         {/* Usuario Profile + Logout */}
         <div className="px-4 py-4 space-y-3 border-t border-white/15">
-          {usuario && (
+          {userName && (
             <div className="text-sm space-y-1">
-              <p className="text-white font-semibold truncate">{usuario.nombre}</p>
+              <p className="text-white font-semibold truncate">{userName}</p>
               <p className="text-[11px]" style={{ color: "#94a3b8" }}>
-                {usuario.email}
+                {userEmail}
               </p>
-              {usuario.empresa && (
-                <p className="text-[11px]" style={{ color: "#64748b" }}>
-                  {usuario.empresa}
-                </p>
-              )}
             </div>
           )}
 

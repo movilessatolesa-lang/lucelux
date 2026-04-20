@@ -12,6 +12,7 @@ interface PresupuestoVistaClienteProps {
   onRechazar: () => void;
   onPagar: () => void;
   onDescargarPDF: () => void;
+  descargando?: boolean;
 }
 
 export function PresupuestoVistaCliente({
@@ -22,6 +23,7 @@ export function PresupuestoVistaCliente({
   onRechazar,
   onPagar,
   onDescargarPDF,
+  descargando = false,
 }: PresupuestoVistaClienteProps) {
   const diasVencimiento = diasHastaVencimiento(presupuesto.fechaVencimiento);
   const saldoPendiente = calcularSaldoPendiente(presupuesto.importeTotal, pagos);
@@ -167,9 +169,10 @@ export function PresupuestoVistaCliente({
 
       <button
         onClick={onDescargarPDF}
-        className="w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-3 rounded-lg transition-colors"
+        disabled={descargando}
+        className="w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-3 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
       >
-        📄 Descargar presupuesto
+        {descargando ? "⏳ Generando PDF..." : "📄 Descargar presupuesto"}
       </button>
     </div>
   );

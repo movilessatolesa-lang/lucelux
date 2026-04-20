@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useApp } from "@/lib/store";
-import type { Cliente, PaymentStatus, WorkStatus, QuoteStatus } from "@/lib/types";
+import type { Cliente, Trabajo, Presupuesto, PaymentStatus, WorkStatus, QuoteStatus } from "@/lib/types";
+import { getCliente, getTrabajos, getPresupuestos, updateCliente as dbUpdateCliente } from "@/lib/db";
 import { ClienteForm } from "@/components/ClienteForm";
 import { Modal } from "@/components/Modal";
 
@@ -71,10 +71,34 @@ export default function ClienteDetailPage() {
   const rawId = params?.id;
   const id = Array.isArray(rawId) ? rawId[0] : (rawId ?? "");
 
-  const { clientes, trabajos, presupuestos, updateCliente } = useApp();
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [editing, setEditing] = useState(false);
 
-  const cliente = clientes.find((c) => c.id === id);
+  useEffect(() => {
+    async function cargar() {
+      const [c, ts, ps] = await Promise.all([
+        getCliente(id),
+        getTrabajos(),
+        getPresupuestos(),
+      ]);
+      setCliente(c);
+      setTrabajos(ts.filter((t) => t.clienteId === id));
+      setPresupuestos(ps.filter((p) => p.clienteId === id));
+      setCargando(false);
+    }
+    if (id) cargar();
+  }, [id]);
+
+  if (cargando) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!cliente) {
     return (
@@ -88,12 +112,8 @@ export default function ClienteDetailPage() {
     );
   }
 
-  const clienteTrabajos = [...trabajos.filter((t) => t.clienteId === id)].sort(
-    (a, b) => (a.fecha < b.fecha ? 1 : -1)
-  );
-  const clientePresupuestos = [...presupuestos.filter((p) => p.clienteId === id)].sort(
-    (a, b) => (a.fecha < b.fecha ? 1 : -1)
-  );
+  const clienteTrabajos = [...trabajos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
+  const clientePresupuestos = [...presupuestos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
 
   // ── economic summary ──────────────────────────────────────────────────────
   const totalFacturado = clienteTrabajos.reduce((s, t) => s + t.precio, 0);
@@ -111,8 +131,9 @@ export default function ClienteDetailPage() {
     .join("")
     .toUpperCase();
 
-  function handleSave(data: Omit<Cliente, "id" | "creadoEn">) {
-    updateCliente(id, data);
+  async function handleSave(data: Omit<Cliente, "id" | "creadoEn">) {
+    const updated = await dbUpdateCliente(id, data);
+    setCliente(updated);
     setEditing(false);
   }
 

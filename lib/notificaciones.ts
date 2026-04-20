@@ -9,6 +9,7 @@ const ETAPAS_INFO: Record<EstadoSeguimiento, { emoji: string; titulo: string }> 
   pendiente_cita: { emoji: "📅", titulo: "Pendiente Confirmar Cita" },
   cita_confirmada: { emoji: "📌", titulo: "Cita Confirmada" },
   en_instalacion: { emoji: "👷", titulo: "En Instalación" },
+  finalizado: { emoji: "✓", titulo: "Finalizado" },
   entregado: { emoji: "🎉", titulo: "¡Entregado!" },
 };
 
@@ -87,88 +88,47 @@ export async function enviarNotificacionSeguimiento(
 }
 
 /**
- * Envía por Twilio (SMS o WhatsApp)
+ * Envía por Twilio — delega al API Route del servidor para no exponer credenciales
  */
 async function enviarPorTwilio(
   telefono: string,
   mensaje: string
 ): Promise<{ exito: boolean; mensaje: string }> {
-  try {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
-
-    if (!accountSid || !authToken || !twilioNumber) {
-      console.warn("Credenciales de Twilio no configuradas");
-      return await enviarMock(telefono, mensaje);
-    }
-
-    // Llamada a Twilio API
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        From: twilioNumber,
-        To: telefono.startsWith("+") ? telefono : `+34${telefono}`,
-        Body: mensaje,
-      }).toString(),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error Twilio: ${response.statusText}`);
-    }
-
-    return { exito: true, mensaje: "Notificación enviada por SMS" };
-  } catch (error) {
-    console.error("Error enviando SMS Twilio:", error);
-    return { exito: false, mensaje: `Error: ${error instanceof Error ? error.message : "Desconocido"}` };
-  }
+  return enviarViaApiRoute(telefono, mensaje);
 }
 
 /**
- * Envía por WhatsApp API (requiere Business Account)
+ * Envía por WhatsApp API — delega al API Route del servidor para no exponer credenciales
  */
 async function enviarPorWhatsAppAPI(
   telefono: string,
   mensaje: string
 ): Promise<{ exito: boolean; mensaje: string }> {
+  return enviarViaApiRoute(telefono, mensaje);
+}
+
+/**
+ * Proxy al API Route /api/notificaciones (las credenciales viven solo en el servidor)
+ */
+async function enviarViaApiRoute(
+  telefono: string,
+  mensaje: string
+): Promise<{ exito: boolean; mensaje: string }> {
   try {
-    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-
-    if (!phoneNumberId || !accessToken) {
-      console.warn("Credenciales de WhatsApp API no configuradas");
-      return await enviarMock(telefono, mensaje);
-    }
-
-    const response = await fetch(
-      `https://graph.instagram.com/v18.0/${phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          to: telefono.startsWith("+") ? telefono : `+34${telefono}`,
-          type: "text",
-          text: { body: mensaje },
-        }),
-      }
-    );
+    const response = await fetch("/api/notificaciones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ telefono, mensaje }),
+    });
 
     if (!response.ok) {
-      throw new Error(`Error WhatsApp: ${response.statusText}`);
+      const data = await response.json().catch(() => ({}));
+      return { exito: false, mensaje: data.mensaje ?? "Error al enviar notificación" };
     }
 
-    return { exito: true, mensaje: "Notificación enviada por WhatsApp" };
+    return await response.json();
   } catch (error) {
-    console.error("Error enviando WhatsApp:", error);
+    console.error("Error llamando a /api/notificaciones:", error);
     return { exito: false, mensaje: `Error: ${error instanceof Error ? error.message : "Desconocido"}` };
   }
 }

@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { useApp } from "@/lib/store";
-import type { Trabajo, WorkStatus, PaymentStatus, MetodoPago } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Trabajo, Cliente, WorkStatus, PaymentStatus, MetodoPago } from "@/lib/types";
+import { getTrabajos, getClientes, createTrabajo, updateTrabajo as dbUpdateTrabajo, deleteTrabajo as dbDeleteTrabajo } from "@/lib/db";
+import { waUrlEnCamino } from "@/lib/alertas";
 
 const WORK_STATUS_OPTIONS: { value: WorkStatus; label: string }[] = [
   { value: "pendiente",       label: "Pendiente" },
@@ -44,6 +45,7 @@ const COBRO_COLOR: Record<PaymentStatus, string> = {
 };
 
 const EMPTY: Omit<Trabajo, "id" | "creadoEn"> = {
+  usuarioId: "",
   clienteId: "",
   descripcion: "",
   medidas: "",
@@ -55,6 +57,9 @@ const EMPTY: Omit<Trabajo, "id" | "creadoEn"> = {
   notas: "",
   estado: "pendiente",
   estadoCobro: "sin_adelanto",
+  horaInicio: "",
+  horaFin: "",
+  notasInstalacion: "",
 };
 
 function fmt(n: number) {
@@ -75,17 +80,114 @@ function Modal({ title, children, onClose }: { title: string; children: React.Re
   );
 }
 
+// ── Botón "En camino" con geolocalización opcional ────────────────────────────
+
+interface BtnEnCaminoProps {
+  telefono: string;
+  nombreCliente: string;
+  descripcion: string;
+  onMarkEnInstalacion: () => void;
+}
+
+function BtnEnCamino({ telefono, nombreCliente, descripcion, onMarkEnInstalacion }: BtnEnCaminoProps) {
+  const [estado, setEstado] = useState<"idle" | "menu" | "loading" | "done">("idle");
+
+  function enviar(conUbicacion: boolean) {
+    if (!conUbicacion) {
+      window.open(waUrlEnCamino(telefono, nombreCliente, descripcion), "_blank");
+      onMarkEnInstalacion();
+      setEstado("done");
+      return;
+    }
+    setEstado("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        window.open(
+          waUrlEnCamino(telefono, nombreCliente, descripcion, undefined, {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
+          "_blank"
+        );
+        onMarkEnInstalacion();
+        setEstado("done");
+      },
+      () => {
+        // Permiso denegado: envía sin ubicación igualmente
+        window.open(waUrlEnCamino(telefono, nombreCliente, descripcion), "_blank");
+        onMarkEnInstalacion();
+        setEstado("done");
+      },
+      { timeout: 6000, maximumAge: 30000 }
+    );
+  }
+
+  if (estado === "done") {
+    return (
+      <span className="px-3 py-2 text-xs font-medium text-green-700 bg-green-50 rounded-lg">
+        ✓ Avisado
+      </span>
+    );
+  }
+
+  if (estado === "loading") {
+    return (
+      <span className="px-3 py-2 text-xs font-medium text-slate-500 bg-slate-100 rounded-lg flex items-center gap-1.5">
+        <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4" strokeDashoffset="10" />
+        </svg>
+        Localizando…
+      </span>
+    );
+  }
+
+  if (estado === "menu") {
+    return (
+      <div className="flex flex-col gap-1.5 items-end">
+        <button
+          onClick={() => enviar(true)}
+          className="px-3 py-2 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+        >
+          📍 Con mi ubicación
+        </button>
+        <button
+          onClick={() => enviar(false)}
+          className="px-3 py-2 text-xs font-semibold bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap"
+        >
+          💬 Solo mensaje
+        </button>
+        <button
+          onClick={() => setEstado("idle")}
+          className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          Cancelar
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setEstado("menu")}
+      className="px-3 py-2 text-xs font-semibold bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1.5"
+    >
+      🚗 En camino
+    </button>
+  );
+}
+
 interface FormProps {
   initial?: Trabajo;
+  clientes: Cliente[];
   onSave: (data: Omit<Trabajo, "id" | "creadoEn">) => void;
   onCancel: () => void;
 }
 
-function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
-  const { clientes } = useApp();
+function TrabajoForm({ initial, clientes, onSave, onCancel }: FormProps) {
   const [form, setForm] = useState<Omit<Trabajo, "id" | "creadoEn">>(
     initial
       ? {
+          usuarioId:          initial.usuarioId,
           clienteId:          initial.clienteId,
           descripcion:        initial.descripcion,
           medidas:            initial.medidas,
@@ -97,6 +199,9 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           notas:              initial.notas,
           estado:             initial.estado,
           estadoCobro:        initial.estadoCobro,
+          horaInicio:        initial.horaInicio ?? "",
+          horaFin:           initial.horaFin ?? "",
+          notasInstalacion:   initial.notasInstalacion ?? "",
         }
       : EMPTY
   );
@@ -146,11 +251,33 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
           <input type="date" value={form.fecha} onChange={(e) => set("fecha", e.target.value)} className={inputCls} />
         </div>
       </div>
-      <div>
-        <label className={labelCls}>Estado del trabajo</label>
-        <select value={form.estado} onChange={(e) => set("estado", e.target.value as WorkStatus)} className={inputCls}>
-          {WORK_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Horario inicio</label>
+          <input
+            type="time"
+            value={form.horaInicio ?? ""}
+            onChange={(e) => set("horaInicio", e.target.value)}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Horario fin</label>
+          <input
+            type="time"
+            value={form.horaFin ?? ""}
+            onChange={(e) => set("horaFin", e.target.value)}
+            className={inputCls}
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className={labelCls}>Estado del trabajo</label>
+          <select value={form.estado} onChange={(e) => set("estado", e.target.value as WorkStatus)} className={inputCls}>
+            {WORK_STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Cobros block */}
@@ -206,13 +333,23 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
       </div>
 
       <div>
-        <label className={labelCls}>Notas</label>
+        <label className={labelCls}>Notas generales</label>
         <textarea
           value={form.notas}
           onChange={(e) => set("notas", e.target.value)}
+          rows={2}
+          className={`${inputCls} resize-none`}
+          placeholder="Observaciones generales…"
+        />
+      </div>
+      <div>
+        <label className={labelCls}>Notas de instalación</label>
+        <textarea
+          value={form.notasInstalacion ?? ""}
+          onChange={(e) => set("notasInstalacion", e.target.value)}
           rows={3}
           className={`${inputCls} resize-none`}
-          placeholder="Observaciones…"
+          placeholder="Materiales a llevar, acceso al edificio, contacto del portero…"
         />
       </div>
       <div className="flex gap-3 pt-2">
@@ -228,26 +365,43 @@ function TrabajoForm({ initial, onSave, onCancel }: FormProps) {
 }
 
 export default function TrabajosPage() {
-  const { trabajos, clientes, addTrabajo, updateTrabajo, deleteTrabajo } = useApp();
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
   const [editing, setEditing] = useState<Trabajo | null>(null);
+
+  useEffect(() => {
+    Promise.all([getTrabajos(), getClientes()]).then(([ts, cs]) => {
+      setTrabajos(ts);
+      setClientes(cs);
+    });
+  }, []);
 
   function nombreCliente(id: string) {
     return clientes.find((c) => c.id === id)?.nombre ?? "—";
   }
 
-  function handleSave(data: Omit<Trabajo, "id" | "creadoEn">) {
+  function telefonoCliente(id: string) {
+    return clientes.find((c) => c.id === id)?.telefono ?? "";
+  }
+
+  async function handleSave(data: Omit<Trabajo, "id" | "creadoEn">) {
     if (mode === "edit" && editing) {
-      updateTrabajo(editing.id, data);
+      await dbUpdateTrabajo(editing.id, data);
+      setTrabajos((prev) => prev.map((t) => (t.id === editing.id ? { ...t, ...data } : t)));
     } else {
-      addTrabajo(data);
+      const nuevo = await createTrabajo(data);
+      setTrabajos((prev) => [nuevo, ...prev]);
     }
     setMode("list");
     setEditing(null);
   }
 
-  function handleDelete(id: string) {
-    if (confirm("¿Eliminar este trabajo?")) deleteTrabajo(id);
+  async function handleDelete(id: string) {
+    if (confirm("\u00bfEliminar este trabajo?")) {
+      await dbDeleteTrabajo(id);
+      setTrabajos((prev) => prev.filter((t) => t.id !== id));
+    }
   }
 
   const sorted = [...trabajos].sort((a, b) => (a.fecha < b.fecha ? 1 : -1));
@@ -320,7 +474,20 @@ export default function TrabajosPage() {
                       ? `${t.metodoPagoAdelanto}${t.fechaAdelanto ? ` · ${t.fechaAdelanto}` : ""}`
                       : ""}
                   </p>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+                    {telefonoCliente(t.clienteId) && t.estado !== "terminado" && (
+                      <BtnEnCamino
+                        telefono={telefonoCliente(t.clienteId)}
+                        nombreCliente={nombreCliente(t.clienteId)}
+                        descripcion={t.descripcion}
+                        onMarkEnInstalacion={async () => {
+                          await dbUpdateTrabajo(t.id, { estado: "en_instalacion" });
+                          setTrabajos((prev) =>
+                            prev.map((tr) => tr.id === t.id ? { ...tr, estado: "en_instalacion" } : tr)
+                          );
+                        }}
+                      />
+                    )}
                     <button
                       onClick={() => { setEditing(t); setMode("edit"); }}
                       className="px-3 py-2 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
@@ -348,6 +515,7 @@ export default function TrabajosPage() {
         >
           <TrabajoForm
             initial={editing ?? undefined}
+            clientes={clientes}
             onSave={handleSave}
             onCancel={() => { setMode("list"); setEditing(null); }}
           />

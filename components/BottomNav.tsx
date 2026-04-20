@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { getPresupuestos, getTrabajos, getClientes } from "@/lib/db";
+import { generarAlertas } from "@/lib/alertas";
+import type { Presupuesto, Trabajo, Cliente } from "@/lib/types";
 
 // ── colour tokens ─────────────────────────────────────────────────────────────
 
@@ -162,6 +165,11 @@ const PRIMARY_NAV: PrimaryItem[] = [
     renderIcon: (a) => <IconUsers color={a ? ACTIVE : INACTIVE} sw={a ? 2.2 : 1.8} />,
   },
   {
+    href: "/agenda",
+    label: "Agenda",
+    renderIcon: (a) => <IconCalendar color={a ? ACTIVE : INACTIVE} sw={a ? 2.2 : 1.8} />,
+  },
+  {
     href: "/trabajos",
     label: "Trabajos",
     renderIcon: (a) => <IconWrench color={a ? ACTIVE : INACTIVE} sw={a ? 2.2 : 1.8} />,
@@ -175,6 +183,21 @@ const PRIMARY_NAV: PrimaryItem[] = [
 
 const MORE_NAV: MoreItem[] = [
   {
+    href: "/alertas",
+    label: "Alertas",
+    description: "Avisos y recordatorios",
+    available: true,
+    iconBg: "#fff1f2",
+    renderIcon: (a: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke={a ? ACTIVE : "#ef4444"} strokeWidth={a ? 2.2 : 1.8}
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 01-3.46 0" />
+      </svg>
+    ),
+  },
+  {
     href: "/presupuestos",
     label: "Presupuestos",
     description: "Crea y envía presupuestos",
@@ -185,10 +208,57 @@ const MORE_NAV: MoreItem[] = [
   {
     href: "/agenda",
     label: "Agenda",
-    description: "Próximamente",
-    available: false,
-    iconBg: "#f1f5f9",
-    renderIcon: () => <IconCalendar color="#94a3b8" sw={1.8} />,
+    description: "Instalaciones programadas",
+    available: true,
+    iconBg: "#eff6ff",
+    renderIcon: (a) => <IconCalendar color={a ? ACTIVE : "#1558d4"} sw={a ? 2.2 : 1.8} />,
+  },
+  /* Agenda ya está en la barra principal */
+  {
+    href: "/plantillas",
+    label: "Plantillas",
+    description: "Modelos de presupuesto rápidos",
+    available: true,
+    iconBg: "#eff6ff",
+    renderIcon: (a: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke={a ? ACTIVE : "#1558d4"} strokeWidth={a ? 2.2 : 1.8}
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a1 1 0 00-1 1v18a1 1 0 001 1h12a1 1 0 001-1V8l-5-5z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="9" y1="13" x2="15" y2="13" />
+        <line x1="9" y1="17" x2="15" y2="17" />
+      </svg>
+    ),
+  },
+  {
+    href: "/analitica",
+    label: "Análisis",
+    description: "Rentabilidad y facturación",
+    available: true,
+    iconBg: "#eff6ff",
+    renderIcon: (a: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke={a ? ACTIVE : "#1558d4"} strokeWidth={a ? 2.2 : 1.8}
+        strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      </svg>
+    ),
+  },
+  {
+    href: "/config-pago",
+    label: "Config. pagos",
+    description: "Bizum, IBAN y adelantos",
+    available: true,
+    iconBg: "#f0fdf4",
+    renderIcon: (a: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke={a ? ACTIVE : "#059669"} strokeWidth={a ? 2.2 : 1.8}
+        strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+      </svg>
+    ),
   },
   {
     href: "/materiales",
@@ -213,6 +283,22 @@ const MORE_NAV: MoreItem[] = [
 export default function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+
+  useEffect(() => {
+    Promise.all([getPresupuestos(), getTrabajos(), getClientes()]).then(([ps, ts, cs]) => {
+      setPresupuestos(ps);
+      setTrabajos(ts);
+      setClientes(cs);
+    });
+  }, []);
+
+  const numAlertas = useMemo(
+    () => generarAlertas(presupuestos, trabajos, clientes).length,
+    [presupuestos, trabajos, clientes]
+  );
 
   // Close sheet on route change
   useEffect(() => {
@@ -314,10 +400,17 @@ export default function BottomNav() {
               }}
             />
             <span
-              className="flex items-center justify-center transition-transform duration-150"
+              className="flex items-center justify-center transition-transform duration-150 relative"
               style={{ transform: moreOpen ? "rotate(30deg) scale(1.08)" : "scale(1)" }}
             >
               <IconDots color={moreActive || moreOpen ? ACTIVE : INACTIVE} />
+              {numAlertas > 0 && !moreOpen && (
+                <span
+                  className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[15px] h-[15px] flex items-center justify-center px-0.5"
+                >
+                  {numAlertas > 9 ? "9+" : numAlertas}
+                </span>
+              )}
             </span>
             <span
               className="text-[10px] font-semibold leading-none tracking-wide transition-colors duration-150"

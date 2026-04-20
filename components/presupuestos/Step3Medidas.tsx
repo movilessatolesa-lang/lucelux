@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import type { LineaPresupuesto } from "@/lib/types";
 
@@ -9,24 +9,35 @@ interface Step3MedidasProps {
 
 export function Step3Medidas({ lineas, onUpdateLinea }: Step3MedidasProps) {
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-slate-900">Paso 3: Definir Medidas</h3>
+    <div className="space-y-5">
+      <h3 className="text-lg font-semibold text-slate-900">
+        Paso 3: Medidas
+      </h3>
 
       {lineas.length === 0 ? (
-        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-center text-slate-600">
+        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-center text-slate-500">
           Agrega materiales en el paso anterior para definir medidas
         </div>
       ) : (
         <div className="space-y-4">
           {lineas.map((linea, idx) => (
-            <div key={linea.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-              <h4 className="font-medium text-slate-900 mb-3">
+            <div
+              key={linea.id}
+              className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm"
+            >
+              <h4 className="font-semibold text-slate-800 mb-3">
                 {idx + 1}. {linea.nombre}
+                <span className="ml-2 text-xs font-normal text-slate-400">
+                  ({linea.cantidad} {linea.unidad})
+                </span>
               </h4>
 
               <label className="block">
-                <span className="text-sm font-medium text-slate-700 mb-1 block">
-                  Medidas (ej: 200cm × 150cm)
+                <span className="text-xs font-semibold text-slate-600 mb-1 block uppercase tracking-wide">
+                  Medidas{" "}
+                  <span className="font-normal text-slate-400 normal-case">
+                    (ancho × alto en cm)
+                  </span>
                 </span>
                 <input
                   type="text"
@@ -34,14 +45,10 @@ export function Step3Medidas({ lineas, onUpdateLinea }: Step3MedidasProps) {
                   onChange={(e) =>
                     onUpdateLinea(linea.id, { medidas: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Ej: 200cm × 150cm o 2m × 1.5m"
+                  className="w-full max-w-xs px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                  placeholder="ej: 120x90"
                 />
               </label>
-
-              <p className="mt-2 text-sm text-slate-600">
-                <span className="font-medium">Cantidad:</span> {linea.cantidad} {linea.unidad}
-              </p>
             </div>
           ))}
         </div>

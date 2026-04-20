@@ -65,6 +65,7 @@ interface AppContextValue extends AppState {
   updatePlantilla: (id: string, data: Partial<Omit<PlantillaPresupuesto, "id" | "creadoEn">>) => void;
   deletePlantilla: (id: string) => void;
   
+  
   // Historial
   getHistorial: () => HistorialEntrada[];
 }
@@ -211,6 +212,24 @@ const SEED_CLIENTES: Cliente[] = [
     problematico: false,
     creadoEn: "2025-04-08T09:30:00.000Z",
   },
+  // ── Cliente demo (portal cliente) ────────────────────────────────────────
+  {
+    id: "cli_demo_001",
+    usuarioId: "usr_cliente_demo_001",
+    nombre: "Cliente Demo",
+    telefono: "600 000 000",
+    email: "cliente@demo.com",
+    direccion: "Calle Falsa 123",
+    ciudad: "Madrid",
+    codigoPostal: "28000",
+    tipo: "particular",
+    dniNif: "00000000A",
+    notas: "Cliente de pruebas para el portal de cliente.",
+    tags: ["demo"],
+    recurrente: false,
+    problematico: false,
+    creadoEn: "2026-01-01T09:00:00.000Z",
+  },
 ];
 
 const SEED_TRABAJOS: Trabajo[] = [
@@ -339,6 +358,7 @@ const SEED_PRESUPUESTOS: Presupuesto[] = [
     totalIva: 436.28,
     importeTotal: 2513.78,
     estadoFirma: "pendiente",
+    porcentajeAdelanto: 50,
     notas: "Medidas pendientes de confirmar",
     creadoEn: "2025-04-01T11:00:00.000Z",
   },
@@ -372,6 +392,7 @@ const SEED_PRESUPUESTOS: Presupuesto[] = [
     importeTotal: 338.8,
     estadoFirma: "aceptado",
     fechaFirma: "2025-02-12T10:00:00.000Z",
+    porcentajeAdelanto: 50,
     notas: "",
     seguimiento: [
       {
@@ -505,6 +526,7 @@ const SEED_PRESUPUESTOS: Presupuesto[] = [
     totalIva: 814.54,
     importeTotal: 4693.29,
     estadoFirma: "pendiente",
+    porcentajeAdelanto: 50,
     notas: "Presupuesto válido por 30 días. Incluye demolición de sistema anterior.",
     creadoEn: "2025-04-05T13:00:00.000Z",
   },
@@ -562,6 +584,7 @@ const SEED_PRESUPUESTOS: Presupuesto[] = [
     totalIva: 1078.04,
     importeTotal: 6211.54,
     estadoFirma: "pendiente",
+    porcentajeAdelanto: 50,
     notas: "Borrador pendiente de confirmación de medidas finales.",
     creadoEn: "2025-04-02T10:30:00.000Z",
   },
@@ -619,8 +642,76 @@ const SEED_PRESUPUESTOS: Presupuesto[] = [
     totalIva: 190.10,
     importeTotal: 1095.35,
     estadoFirma: "pendiente",
+    porcentajeAdelanto: 50,
     notas: "Cliente solicitó opciones con control solar. Presupuesto a la espera de confirmación.",
     creadoEn: "2025-04-08T15:45:00.000Z",
+  },
+  // ── Presupuesto demo (portal cliente) ────────────────────────────────────
+  {
+    id: "presu_demo_001",
+    usuarioId: "usr_cliente_demo_001",
+    clienteId: "cli_demo_001",
+    titulo: "Ventana corredera aluminio + persiana motorizada",
+    descripcion: "Instalación de ventana corredera de aluminio con cristal Climalit 4+12+4, persiana motorizada y retirada de ventana antigua. Incluye transporte y limpieza.",
+    lineas: [
+      {
+        id: "pdlin1",
+        nombre: "Ventana corredera aluminio 120×100 cm",
+        cantidad: 1,
+        unidad: "ud",
+        medidas: "120×100 cm",
+        costeUnitario: 300,
+        margenPorcentaje: 30,
+        descuentoLinea: 0,
+        ivaLinea: 21,
+      },
+      {
+        id: "pdlin2",
+        nombre: "Persiana motorizada 120×100 cm",
+        cantidad: 1,
+        unidad: "ud",
+        medidas: "120×100 cm",
+        costeUnitario: 120,
+        margenPorcentaje: 25,
+        descuentoLinea: 0,
+        ivaLinea: 21,
+      },
+      {
+        id: "pdlin3",
+        nombre: "Instalación, retirada y limpieza",
+        cantidad: 1,
+        unidad: "serv",
+        medidas: "",
+        costeUnitario: 80,
+        margenPorcentaje: 20,
+        descuentoLinea: 0,
+        ivaLinea: 21,
+      },
+    ],
+    fecha: "2026-04-19",
+    fechaVencimiento: "2026-12-31",
+    estado: "enviado",
+    subtotalLineas: 500,
+    descuentoGlobal: 0,
+    subtotalConDescuento: 500,
+    ivaGlobal: 21,
+    totalIva: 105,
+    importeTotal: 605,
+    estadoFirma: "pendiente",
+    porcentajeAdelanto: 50,
+    notas: "Presupuesto de prueba para el portal de cliente. Puedes firmar, pagar y ver el seguimiento.",
+    seguimiento: [
+      { id: "pdseg1", estado: "aceptado", descripcion: "Presupuesto aceptado por el cliente", fecha: "", completado: false, notas: "Pendiente de firma del cliente." },
+      { id: "pdseg2", estado: "pendiente_material", descripcion: "Esperando disponibilidad de materiales", completado: false },
+      { id: "pdseg3", estado: "material_disponible", descripcion: "Materiales disponibles en taller", completado: false },
+      { id: "pdseg4", estado: "en_fabricacion", descripcion: "Fabricación en proceso", completado: false },
+      { id: "pdseg5", estado: "fabricacion_lista", descripcion: "Fabricación terminada", completado: false },
+      { id: "pdseg6", estado: "pendiente_cita", descripcion: "Pendiente de confirmar cita de instalación", completado: false },
+      { id: "pdseg7", estado: "cita_confirmada", descripcion: "Cita de instalación confirmada", completado: false },
+      { id: "pdseg8", estado: "en_instalacion", descripcion: "Instalación en curso", completado: false },
+      { id: "pdseg9", estado: "entregado", descripcion: "Obra finalizada y entregada", completado: false },
+    ],
+    creadoEn: "2026-04-19T09:00:00.000Z",
   },
 ];
 
@@ -715,6 +806,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Inicializar usuarios demo y admin al montar
   useEffect(() => {
     crearUsariosDemo();
+
+    // Garantizar que el cliente demo siempre existe en clientes
+    setClientes((prev) => {
+      if (prev.find((c) => c.id === "cli_demo_001")) return prev;
+      const demoCliente = SEED_CLIENTES.find((c) => c.id === "cli_demo_001");
+      return demoCliente ? [...prev, demoCliente] : prev;
+    });
+
+    // Garantizar que el presupuesto demo siempre existe
+    setPresupuestos((prev) => {
+      if (prev.find((p) => p.id === "presu_demo_001")) return prev;
+      const demoPresu = SEED_PRESUPUESTOS.find((p) => p.id === "presu_demo_001");
+      return demoPresu ? [...prev, demoPresu] : prev;
+    });
   }, []);
 
   // Escuchar cambios de sesión en localStorage

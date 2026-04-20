@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useApp } from "@/lib/store";
 import type { Cliente, Trabajo } from "@/lib/types";
+import { getClientes, getTrabajos, createCliente, updateCliente } from "@/lib/db";
 import { ClienteForm } from "@/components/ClienteForm";
 import { Modal } from "@/components/Modal";
 
@@ -23,10 +23,16 @@ function clienteStats(id: string, trabajos: Trabajo[]) {
 }
 
 export default function ClientesPage() {
-  const { clientes, trabajos, addCliente, updateCliente } = useApp();
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [trabajos, setTrabajos] = useState<Trabajo[]>([]);
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
   const [editing, setEditing] = useState<Cliente | null>(null);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    getClientes().then(setClientes).catch(console.error);
+    getTrabajos().then(setTrabajos).catch(console.error);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -40,11 +46,13 @@ export default function ClientesPage() {
     );
   }, [clientes, search]);
 
-  function handleSave(data: Omit<Cliente, "id" | "creadoEn">) {
+  async function handleSave(data: Omit<Cliente, "id" | "creadoEn">) {
     if (mode === "edit" && editing) {
-      updateCliente(editing.id, data);
+      const updated = await updateCliente(editing.id, data);
+      setClientes((prev) => prev.map((c) => c.id === editing.id ? updated : c));
     } else {
-      addCliente(data);
+      const nuevo = await createCliente(data);
+      setClientes((prev) => [nuevo, ...prev]);
     }
     setMode("list");
     setEditing(null);

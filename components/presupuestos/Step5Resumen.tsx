@@ -14,10 +14,12 @@ interface Step5ResumenProps {
   descuentoGlobal: number;
   ivaGlobal: number;
   importeTotal: number;
+  porcentajeAdelanto: number;
   onUpdateTitulo: (titulo: string) => void;
   onUpdateDescripcion: (desc: string) => void;
   onUpdateFecha: (fecha: string) => void;
   onUpdateFechaVencimiento: (fecha: string) => void;
+  onUpdatePorcentajeAdelanto: (v: number) => void;
 }
 
 export function Step5Resumen({
@@ -31,13 +33,16 @@ export function Step5Resumen({
   descuentoGlobal,
   ivaGlobal,
   importeTotal,
+  porcentajeAdelanto,
   onUpdateTitulo,
   onUpdateDescripcion,
   onUpdateFecha,
   onUpdateFechaVencimiento,
+  onUpdatePorcentajeAdelanto,
 }: Step5ResumenProps) {
   const subtotalConDesc = subtotalLineas - descuentoGlobal;
   const totalIva = subtotalConDesc * (ivaGlobal / 100);
+  const importeAdelanto = importeTotal * (porcentajeAdelanto / 100);
 
   return (
     <div className="space-y-4">
@@ -100,6 +105,52 @@ export function Step5Resumen({
             />
           </label>
         </div>
+
+        {/* Pago anticipado */}
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <span className="text-sm font-semibold text-emerald-800 block mb-2">💶 Adelanto al aceptar</span>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <label className="text-xs text-emerald-700 mb-1 block">% a cobrar</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={porcentajeAdelanto}
+                  onChange={(e) => onUpdatePorcentajeAdelanto(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))}
+                  className="w-24 px-3 py-2 border border-emerald-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-center font-bold"
+                />
+                <span className="text-emerald-700 font-medium">%</span>
+                {[25, 50, 75, 100].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => onUpdatePorcentajeAdelanto(pct)}
+                    className={`px-2 py-1 rounded text-xs font-semibold transition-colors ${
+                      porcentajeAdelanto === pct
+                        ? "bg-emerald-600 text-white"
+                        : "bg-white border border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {porcentajeAdelanto > 0 && importeTotal > 0 && (
+            <p className="text-sm text-emerald-800 font-bold mt-2">
+              El cliente verá un adelanto de{" "}
+              <span className="text-emerald-900">{formatearMoneda(importeAdelanto)}</span>
+              {" "}al aceptar el presupuesto.
+            </p>
+          )}
+          {porcentajeAdelanto === 0 && (
+            <p className="text-xs text-emerald-600 mt-1">Sin adelanto — el cliente no verá ningún importe a pagar al aceptar.</p>
+          )}
+        </div>
       </div>
 
       {/* Resumen final */}
@@ -146,6 +197,12 @@ export function Step5Resumen({
             <span className="font-bold text-slate-900">TOTAL:</span>
             <span className="font-bold text-blue-700 text-lg">{formatearMoneda(importeTotal)}</span>
           </div>
+          {porcentajeAdelanto > 0 && (
+            <div className="flex justify-between bg-emerald-50 px-2 py-1 rounded">
+              <span className="font-semibold text-emerald-800">Adelanto ({porcentajeAdelanto}%):</span>
+              <span className="font-bold text-emerald-700">{formatearMoneda(importeAdelanto)}</span>
+            </div>
+          )}
         </div>
       </div>
 

@@ -2,34 +2,34 @@
 
 import { useState } from "react";
 import type { Presupuesto, Cliente, HitoSeguimiento } from "@/lib/types";
-import { useApp } from "@/lib/store";
+import { createPlantilla } from "@/lib/db";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
 import { BotonesAccion } from "./BotonesAccion";
 import { SeguimientoObraAdmin } from "./SeguimientoObraAdmin";
 
 interface DetallePresupuestoProps {
   presupuesto: Presupuesto;
+  cliente?: Cliente | null;
   onActualizar: (data: Partial<Presupuesto>) => void;
   onClose: () => void;
 }
 
 export function DetallePresupuesto({
   presupuesto,
+  cliente,
   onActualizar,
   onClose,
 }: DetallePresupuestoProps) {
-  const { clientes, addPlantilla } = useApp();
-  const cliente = clientes.find((c) => c.id === presupuesto.clienteId);
 
-  const handleGuardarPlantilla = () => {
+  const handleGuardarPlantilla = async () => {
     const nombre = prompt("Nombre de la plantilla:");
     if (!nombre) return;
 
-    addPlantilla({
+    await createPlantilla({
       nombre,
       descripcion: presupuesto.descripcion,
       lineas: presupuesto.lineas,
-      margenPorcentajePredeterminado: presupuesto.ivaGlobal,
+      margenPorcentajoPredeterminado: presupuesto.ivaGlobal,
       ivaGlobalPredeterminado: presupuesto.ivaGlobal,
     });
 
@@ -112,8 +112,7 @@ export function DetallePresupuesto({
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold">Material</th>
                     <th className="px-3 py-2 text-center font-semibold">Cant.</th>
-                    <th className="px-3 py-2 text-right font-semibold">Coste Unit.</th>
-                    <th className="px-3 py-2 text-right font-semibold">Margen</th>
+                    <th className="px-3 py-2 text-right font-semibold">Precio unit.</th>
                     <th className="px-3 py-2 text-right font-semibold">Total</th>
                   </tr>
                 </thead>
@@ -134,10 +133,7 @@ export function DetallePresupuesto({
                           {linea.cantidad} {linea.unidad}
                         </td>
                         <td className="px-3 py-2 text-right text-slate-900">
-                          {formatearMoneda(linea.costeUnitario)}
-                        </td>
-                        <td className="px-3 py-2 text-right text-slate-900">
-                          {linea.margenPorcentaje}%
+                          {formatearMoneda(linea.costeUnitario * (1 + linea.margenPorcentaje / 100))}
                         </td>
                         <td className="px-3 py-2 text-right font-semibold text-slate-900">
                           {formatearMoneda(total)}

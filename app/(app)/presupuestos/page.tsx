@@ -1,11 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { useApp } from "@/lib/store";
-import type { QuoteStatus } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { Presupuesto, Cliente, QuoteStatus } from "@/lib/types";
+import {
+  getPresupuestos,
+  getClientes,
+  deletePresupuesto as dbDeletePresupuesto,
+  updatePresupuesto as dbUpdatePresupuesto,
+} from "@/lib/db";
 import { PresupuestoCreator } from "@/components/presupuestos/PresupuestoCreator";
 import { DetallePresupuesto } from "@/components/presupuestos/DetallePresupuesto";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
+import { whatsappUrl } from "@/lib/alertas";
 
 const QUOTE_STATUS_OPTIONS: { value: QuoteStatus; label: string }[] = [
   { value: "borrador", label: "Borrador" },
@@ -49,39 +55,62 @@ function Modal({
 }
 
 export default function PresupuestosPage() {
-  const { presupuestos, clientes, deletePresupuesto, updatePresupuesto } = useApp();
+  const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [showCreator, setShowCreator] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [detalleId, setDetalleId] = useState<string | null>(null);
+
+  useEffect(() => {
+    Promise.all([getPresupuestos(), getClientes()]).then(([ps, cs]) => {
+      setPresupuestos(ps);
+      setClientes(cs);
+    });
+  }, []);
 
   const nombreCliente = (id: string) => {
     return clientes.find((c) => c.id === id)?.nombre ?? "—";
   };
 
-  const handleDelete = (id: string) => {
+  const enlacePresupuesto = (id: string) => {
+    if (typeof window === "undefined") return "";
+    return `${window.location.origin}/presupuestos/${id}/cliente`;
+  };
+
+  const waUrlPresupuesto = (p: typeof presupuestos[0]) => {
+    const cliente = clientes.find((c) => c.id === p.clienteId);
+    if (!cliente?.telefono) return null;
+    const nombre = cliente.nombre.split(" ")[0];
+    const importe = formatearMoneda(p.importeTotal);
+    const enlace = enlacePresupuesto(p.id);
+    const msg = `Hola ${nombre} 👋, le enviamos desde LUCELUX el presupuesto "${p.titulo}" por importe de ${importe} (IVA incluido). Puede consultarlo y aceptarlo aquí:\n${enlace}\n\nSi tiene alguna pregunta, estamos a su disposición. ¡Gracias!`;
+    return whatsappUrl(cliente.telefono, msg);
+  };
+
+  const waUrlRecordatorio = (p: typeof presupuestos[0]) => {
+    const cliente = clientes.find((c) => c.id === p.clienteId);
+    if (!cliente?.telefono) return null;
+    const nombre = cliente.nombre.split(" ")[0];
+    const enlace = enlacePresupuesto(p.id);
+    const msg = `Hola ${nombre} 👋, le escribimos desde LUCELUX para recordarle el presupuesto "${p.titulo}" que le enviamos. Puede revisarlo aquí:\n${enlace}\n\n¿Tiene alguna duda o le podemos ayudar? Quedamos a su disposición.`;
+    return whatsappUrl(cliente.telefono, msg);
+  };
+
+  const handleDelete = async (id: string) => {
     if (confirm("¿Eliminar este presupuesto?")) {
-      deletePresupuesto(id);
+      await dbDeletePresupuesto(id);
+      setPresupuestos((prev) => prev.filter((p) => p.id !== id));
     }
   };
 
-  const handleEnviarCliente = (p: typeof presupuestos[0]) => {
+  const handleEnviarCliente = async (p: Presupuesto) => {
     const cliente = clientes.find((c) => c.id === p.clienteId);
     if (!cliente) return;
-    
-    const linkPublico = `${window.location.origin}/presupuestos/${p.id}/cliente`;
-    const email = cliente.email;
-    
-    // Actualizar estado a "enviado"
-    updatePresupuesto(p.id, {
-      ...p,
-      estado: "enviado",
-    });
-    
-    // Copiar al clipboard
-    navigator.clipboard.writeText(linkPublico);
-    
-    // Mostrar modal con info de envío
-    alert(`✓ Presupuesto marcado como enviado.\n\nLink copiado al portapapeles:\n${linkPublico}\n\nEnvía este link a ${email}`);
+    await dbUpdatePresupuesto(p.id, { ...p, estado: "enviado" });
+    setPresupuestos((prev) =>
+      prev.map((pres) => (pres.id === p.id ? { ...pres, estado: "enviado" } : pres))
+    );
+    alert(`✓ Presupuesto marcado como enviado a ${cliente.nombre}.`);
   };
 
   const presupuestoDetalle = detalleId ? presupuestos.find((p) => p.id === detalleId) : null;
@@ -157,6 +186,38 @@ export default function PresupuestosPage() {
                 </div>
 
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  {p.estado === "enviado" && waUrlRecordatorio(p) && (
+                    <a
+                      href={waUrlRecordatorio(p)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-2 text-xs font-medium bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128c3e] rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                      </svg>
+                      Recordatorio WA
+                    </a>
+                  )}
+                  {p.estado === "borrador" && waUrlPresupuesto(p) && (
+                    <a
+                      href={waUrlPresupuesto(p)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={async () => {
+                        await dbUpdatePresupuesto(p.id, { ...p, estado: "enviado" });
+                        setPresupuestos((prev) =>
+                          prev.map((pres) => (pres.id === p.id ? { ...pres, estado: "enviado" } : pres))
+                        );
+                      }}
+                      className="px-3 py-2 text-xs font-medium bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#128c3e] rounded-lg transition-colors flex items-center gap-1"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                      </svg>
+                      Enviar por WhatsApp
+                    </a>
+                  )}
                   <button
                     onClick={() => handleEnviarCliente(p)}
                     className="px-3 py-2 text-xs font-medium bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
@@ -182,37 +243,44 @@ export default function PresupuestosPage() {
         </div>
       )}
 
-      {(showCreator || editingId) && (
-        <Modal
-          title={editingId ? "Editar presupuesto" : "Nuevo presupuesto"}
-          onClose={() => {
-            setShowCreator(false);
-            setEditingId(null);
-          }}
-        >
+      {showCreator && (
+        <Modal title="Nuevo presupuesto" onClose={() => setShowCreator(false)}>
           <PresupuestoCreator
-            presupuestoId={editingId ?? undefined}
-            onClose={() => {
+            onClose={() => setShowCreator(false)}
+            onSaved={async () => {
               setShowCreator(false);
-              setEditingId(null);
-            }}
-            onSaved={() => {
-              setShowCreator(false);
-              setEditingId(null);
+              setPresupuestos(await getPresupuestos());
             }}
           />
         </Modal>
       )}
-
-      {presupuestoDetalle && (
-        <DetallePresupuesto
-          presupuesto={presupuestoDetalle}
-          onActualizar={(data) => {
-            updatePresupuesto(presupuestoDetalle.id, data);
-            setDetalleId(null);
-          }}
-          onClose={() => setDetalleId(null)}
-        />
+      {editingId && (
+        <Modal title="Editar presupuesto" onClose={() => setEditingId(null)}>
+          <PresupuestoCreator
+            presupuestoId={editingId}
+            onClose={() => setEditingId(null)}
+            onSaved={async () => {
+              setEditingId(null);
+              setPresupuestos(await getPresupuestos());
+            }}
+          />
+        </Modal>
+      )}
+      {detalleId && presupuestoDetalle && (
+        <Modal title="Detalle del presupuesto" onClose={() => setDetalleId(null)}>
+          <DetallePresupuesto 
+            presupuesto={presupuestoDetalle}
+            cliente={clientes.find((c) => c.id === presupuestoDetalle.clienteId) ?? null}
+            onActualizar={async (data) => {
+              const updated = { ...presupuestoDetalle, ...data };
+              await dbUpdatePresupuesto(presupuestoDetalle.id, updated);
+              setPresupuestos((prev) =>
+                prev.map((p) => (p.id === presupuestoDetalle.id ? updated : p))
+              );
+            }}
+            onClose={() => setDetalleId(null)}
+          />
+        </Modal>
       )}
     </div>
   );

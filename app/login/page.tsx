@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { login, registrarUsuario, crearUsariosDemo } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [modo, setModo] = useState<"login" | "registro">("login");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,18 +28,18 @@ export default function LoginPage() {
     setCargando(true);
 
     try {
-      const resultado = login(email, password);
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-      if (!resultado.exito) {
-        setError(resultado.error || "Error al iniciar sesión");
+      if (authError) {
+        setError("Email o contraseña incorrectos");
         return;
       }
 
-      // Esperar un poco para asegurar que localStorage se actualiza
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      
-      // Recargar la página para reinicializar el contexto
-      window.location.href = "/dashboard";
+      router.push("/dashboard");
+      router.refresh();
     } finally {
       setCargando(false);
     }
@@ -50,36 +51,34 @@ export default function LoginPage() {
     setCargando(true);
 
     try {
-      const resultado = registrarUsuario(
-        nombre,
-        emailRegistro,
-        passwordRegistro,
-        empresa,
-        telefonoEmpresa
-      );
+      const { error: authError } = await supabase.auth.signUp({
+        email: emailRegistro,
+        password: passwordRegistro,
+        options: {
+          data: { nombre, empresa, telefono_empresa: telefonoEmpresa },
+        },
+      });
 
-      if (!resultado.exito) {
-        setError(resultado.error || "Error al registrar");
+      if (authError) {
+        setError(authError.message);
         return;
       }
 
-      // Hacer login automático
-      const loginResult = login(emailRegistro, passwordRegistro);
-      if (loginResult.exito) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        window.location.href = "/dashboard";
+      // Hacer login automático tras registro
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: emailRegistro,
+        password: passwordRegistro,
+      });
+
+      if (!loginError) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        setError("Cuenta creada. Comprueba tu email para confirmar y luego inicia sesión.");
+        setModo("login");
       }
     } finally {
       setCargando(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    crearUsariosDemo();
-    const resultado = login("demo@lucelux.com", "demo123");
-    if (resultado.exito) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-      window.location.href = "/dashboard";
     }
   };
 
@@ -252,30 +251,6 @@ export default function LoginPage() {
               </button>
             </form>
           )}
-
-          {/* Demo Button */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">o</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleDemoLogin}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2"
-          >
-            🎯 Prueba con Demo
-          </button>
-
-          {/* Footer Info */}
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-700 space-y-1">
-            <p className="font-medium">👉 Datos de demo:</p>
-            <p>Email: <code className="bg-white px-2 py-1 rounded">demo@lucelux.com</code></p>
-            <p>Contraseña: <code className="bg-white px-2 py-1 rounded">demo123</code></p>
-          </div>
         </div>
 
         {/* Footer */}

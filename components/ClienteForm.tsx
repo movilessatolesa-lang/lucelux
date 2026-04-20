@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Cliente, TipoCliente } from "@/lib/types";
 
 const EMPTY: Omit<Cliente, "id" | "creadoEn"> = {
+  usuarioId: "",
   nombre: "",
   telefono: "",
   email: "",
@@ -32,6 +33,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
   const [form, setForm] = useState<Omit<Cliente, "id" | "creadoEn">>(
     initial
       ? {
+          usuarioId: initial.usuarioId,
           nombre: initial.nombre,
           telefono: initial.telefono,
           email: initial.email ?? "",

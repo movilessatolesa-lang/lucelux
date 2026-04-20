@@ -83,17 +83,24 @@ function crearHtmlPresupuesto(
     ? `${window.location.origin}/presupuestos/${presupuesto.id}/aceptar?token=${presupuesto.urlFirma}`
     : "";
 
+
   div.innerHTML = `
-    <div style="margin-bottom: 30px; border-bottom: 3px solid #1558d4; padding-bottom: 15px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 style="margin: 0; color: #1558d4; font-size: 32px;">LUCELUX</h1>
-          <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">Carpintería de Aluminio</p>
+    <div style="margin-bottom: 30px; border-bottom: 3px solid #1558d4; padding-bottom: 15px; display: flex; align-items: center; gap: 24px;">
+      <div style="flex-shrink:0;">
+        <img src='/logo-lucelux.jpg' alt='Logo Lucelux' style='height: 80px; border-radius: 8px; box-shadow: 0 2px 8px #0001;'/>
+      </div>
+      <div style="flex:1;">
+        <h1 style="margin: 0; color: #1558d4; font-size: 32px; font-weight: bold; letter-spacing: 1px;">LUCELUX <span style='color:#666;font-weight:normal;'>Carpintería de Aluminio</span></h1>
+        <div style="margin-top: 4px; color: #444; font-size: 13px;">
+          <span style="font-weight: bold;">Dirección:</span> Piera<br/>
+          <span style="font-weight: bold;">Tel:</span> 655 100 964 &nbsp;|&nbsp;
+          <span style="font-weight: bold;">Email:</span> lucelux.aluminio@gmail.com
         </div>
-        <div style="text-align: right;">
-          <p style="margin: 0; font-weight: bold; font-size: 18px;">PRESUPUESTO</p>
-          <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">ID: ${presupuesto.id}</p>
-        </div>
+      </div>
+      <div style="text-align: right;">
+        <p style="margin: 0; font-weight: bold; font-size: 18px;">PRESUPUESTO</p>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">ID: ${presupuesto.id}</p>
+        <p style="margin: 5px 0 0 0; color: #666; font-size: 11px;">Fecha: ${formatearFecha(presupuesto.fecha)}</p>
       </div>
     </div>
 
@@ -130,9 +137,7 @@ function crearHtmlPresupuesto(
           <tr style="background-color: #f0f0f0; border-bottom: 2px solid #1558d4;">
             <th style="padding: 8px; text-align: left; font-weight: bold;">Material</th>
             <th style="padding: 8px; text-align: center; font-weight: bold;">Cant.</th>
-            <th style="padding: 8px; text-align: right; font-weight: bold;">Coste Unit.</th>
-            <th style="padding: 8px; text-align: right; font-weight: bold;">Subtotal</th>
-            <th style="padding: 8px; text-align: right; font-weight: bold;">Margen</th>
+            <th style="padding: 8px; text-align: right; font-weight: bold;">Precio unit.</th>
             <th style="padding: 8px; text-align: right; font-weight: bold;">Total</th>
           </tr>
         </thead>
@@ -145,9 +150,7 @@ function crearHtmlPresupuesto(
                 <strong>${linea.nombre}</strong>${linea.medidas ? `<br><span style="color: #999;">${linea.medidas}</span>` : ""}
               </td>
               <td style="padding: 8px; text-align: center;">${linea.cantidad} ${linea.unidad}</td>
-              <td style="padding: 8px; text-align: right;">${formatearMoneda(linea.costeUnitario)}</td>
-              <td style="padding: 8px; text-align: right;">${formatearMoneda(linea.cantidad * linea.costeUnitario)}</td>
-              <td style="padding: 8px; text-align: right;">${linea.margenPorcentaje}%</td>
+              <td style="padding: 8px; text-align: right;">${formatearMoneda(linea.costeUnitario * (1 + linea.margenPorcentaje / 100))}</td>
               <td style="padding: 8px; text-align: right; font-weight: bold;">${formatearMoneda(
                 (linea.cantidad * linea.costeUnitario * (1 + linea.margenPorcentaje / 100)) -
                   linea.descuentoLinea
@@ -225,7 +228,7 @@ export async function descargarPdfPresupuesto(
   cliente: Cliente
 ): Promise<void> {
   try {
-    const blob = await generarPdfPresupuesto(presupuesto, cliente);
+    const blob = await generarPdfPresupuesto(presupuesto, cliente, "/logo-lucelux.jpg");
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

@@ -2,195 +2,118 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { PresupuestoVistaCliente } from "@/components/presupuestos/PresupuestoVistaCliente";
 import { SeguimientoObra } from "@/components/presupuestos/SeguimientoObra";
 import { Modal } from "@/components/Modal";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
+import { generarPdfPresupuesto } from "@/lib/presupuesto-pdf";
+import { BloquePagoCliente } from "@/components/presupuestos/BloquePagoCliente";
 import type { Presupuesto, Cliente } from "@/lib/types";
 
-// Mock data - en producción cargar desde API
-const SEED_PRESUPUESTOS: Presupuesto[] = [
-  {
-    id: "p1",
-    usuarioId: "usr_demo_001",
-    clienteId: "c1",
-    titulo: "Celosías aluminio terraza",
-    descripcion: "Celosías para terraza exterior",
-    lineas: [
-      {
-        id: "lin1",
-        materialId: "mat1",
-        nombre: "Marco Aluminio Plata 25mm",
-        cantidad: 10,
-        unidad: "m",
-        medidas: "2.5m × 1.5m",
-        costeUnitario: 45,
-        margenPorcentaje: 30,
-        descuentoLinea: 0,
-        ivaLinea: 21,
-      },
-      {
-        id: "lin2",
-        materialId: "mat4",
-        nombre: "Vidrio Templado 6mm",
-        cantidad: 3.75,
-        unidad: "m²",
-        medidas: "2.5m × 1.5m",
-        costeUnitario: 20,
-        margenPorcentaje: 30,
-        descuentoLinea: 0,
-        ivaLinea: 21,
-      },
-    ],
-    fecha: "2025-04-01",
-    fechaVencimiento: "2025-05-01",
-    estado: "enviado",
-    subtotalLineas: 2077.5,
-    descuentoGlobal: 0,
-    subtotalConDescuento: 2077.5,
-    ivaGlobal: 21,
-    totalIva: 436.28,
-    importeTotal: 2513.78,
-    estadoFirma: "pendiente",
-    urlFirma: "token_p1_c1",
-    notas: "Medidas pendientes de confirmar",
-    creadoEn: "2025-04-01T11:00:00.000Z",
-  },
-  {
-    id: "p2",
-    usuarioId: "usr_demo_001",
-    clienteId: "c1",
-    titulo: "Persiana motorizada dormitorio",
-    descripcion: "Persiana con motor reversible",
-    lineas: [
-      {
-        id: "lin3",
-        nombre: "Persiana Motorizada 1.2m × 1m",
-        cantidad: 1,
-        unidad: "ud",
-        medidas: "1.2m × 1m",
-        costeUnitario: 200,
-        margenPorcentaje: 40,
-        descuentoLinea: 20,
-        ivaLinea: 21,
-      },
-    ],
-    fecha: "2025-02-10",
-    fechaVencimiento: "2025-03-10",
-    estado: "aceptado",
-    subtotalLineas: 280,
-    descuentoGlobal: 0,
-    subtotalConDescuento: 280,
-    ivaGlobal: 21,
-    totalIva: 58.8,
-    importeTotal: 338.8,
-    estadoFirma: "aceptado",
-    fechaFirma: "2025-02-12T10:00:00.000Z",
-    urlFirma: "token_p2_c1",
-    notas: "",
-    creadoEn: "2025-02-10T09:00:00.000Z",
-  },
-];
+// Mappers snake_case → camelCase (página pública, sin auth)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPresupuesto(row: any): Presupuesto {
+  return {
+    id: row.id,
+    usuarioId: row.usuario_id,
+    clienteId: row.cliente_id,
+    titulo: row.titulo,
+    descripcion: row.descripcion ?? "",
+    lineas: row.lineas ?? [],
+    fecha: row.fecha,
+    fechaVencimiento: row.fecha_vencimiento ?? "",
+    estado: row.estado,
+    subtotalLineas: Number(row.subtotal_lineas ?? 0),
+    descuentoGlobal: Number(row.descuento_global ?? 0),
+    subtotalConDescuento: Number(row.subtotal_con_descuento ?? 0),
+    ivaGlobal: Number(row.iva_global ?? 21),
+    totalIva: Number(row.total_iva ?? 0),
+    importeTotal: Number(row.importe_total ?? 0),
+    urlFirma: row.url_firma ?? undefined,
+    estadoFirma: row.estado_firma ?? "pendiente",
+    fechaFirma: row.fecha_firma ?? undefined,
+    porcentajeAdelanto: Number(row.porcentaje_adelanto ?? 0),
+    seguimiento: row.seguimiento ?? [],
+    notas: row.notas ?? "",
+    creadoEn: row.creado_en,
+    modificadoEn: row.modificado_en ?? undefined,
+  };
+}
 
-const SEED_CLIENTES: Cliente[] = [
-  {
-    id: "c1",
-    usuarioId: "usr_demo_001",
-    nombre: "Manuel García López",
-    telefono: "612 345 678",
-    email: "mgarcia@gmail.com",
-    direccion: "Calle Mayor 12, 2ºB",
-    ciudad: "Madrid",
-    codigoPostal: "28001",
-    tipo: "particular",
-    dniNif: "12345678A",
-    notas: "Cliente habitual",
-    tags: ["habitual"],
-    recurrente: true,
-    problematico: false,
-    creadoEn: "2024-01-15T10:00:00.000Z",
-  },
-];
-
-const MOCK_PAGOS = [
-  {
-    id: "1",
-    usuarioId: "user1",
-    presupuestoId: "p1",
-    clienteId: "c1",
-    importe: 500,
-    porcentaje: 30,
-    metodo: "tarjeta" as const,
-    estado: "completado" as const,
-    fechaCreacion: "2025-02-01",
-    creadoEn: "2025-02-01",
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCliente(row: any): Cliente {
+  return {
+    id: row.id,
+    usuarioId: row.usuario_id,
+    nombre: row.nombre,
+    telefono: row.telefono ?? "",
+    email: row.email ?? "",
+    direccion: row.direccion ?? "",
+    ciudad: row.ciudad ?? "",
+    codigoPostal: row.codigo_postal ?? "",
+    tipo: row.tipo ?? "particular",
+    dniNif: row.dni_nif ?? "",
+    notas: row.notas ?? "",
+    tags: row.tags ?? [],
+    recurrente: row.recurrente ?? false,
+    problematico: row.problematico ?? false,
+    creadoEn: row.creado_en,
+  };
+}
 
 export default function ClientePresupuestoPublicoPage() {
   const params = useParams();
-  const presupuestoId = params.id as string;
-  
+  // El [id] en la URL es el token url_firma, no el id interno
+  const token = params.id as string;
+
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
   const [showFirmaModal, setShowFirmaModal] = useState(false);
   const [showRechazoModal, setShowRechazoModal] = useState(false);
   const [showPagoModal, setShowPagoModal] = useState(false);
   const [motivos, setMotivos] = useState("");
   const [metodoSeleccionado, setMetodoSeleccionado] = useState("tarjeta");
+  const [descargando, setDescargando] = useState(false);
 
   useEffect(() => {
-    // Cargar presupuestos y clientes desde localStorage
-    let presupuestosGuardados: Presupuesto[] = [];
-    let clientesGuardados: Cliente[] = [];
-    
-    if (typeof window !== "undefined") {
-      const presupuestosJson = localStorage.getItem("lucelux_presupuestos");
-      const clientesJson = localStorage.getItem("lucelux_clientes");
-      
-      try {
-        presupuestosGuardados = presupuestosJson ? JSON.parse(presupuestosJson) : SEED_PRESUPUESTOS;
-        clientesGuardados = clientesJson ? JSON.parse(clientesJson) : SEED_CLIENTES;
-      } catch (e) {
-        presupuestosGuardados = SEED_PRESUPUESTOS;
-        clientesGuardados = SEED_CLIENTES;
+    async function cargarDatos() {
+      const supabase = createClient();
+
+      // Buscar por url_firma (RLS permite acceso público cuando url_firma no es null)
+      const { data: presupuestoData, error: presupuestoError } = await supabase
+        .from("presupuestos")
+        .select("*")
+        .eq("url_firma", token)
+        .single();
+
+      if (presupuestoError || !presupuestoData) {
+        setError("Presupuesto no encontrado o enlace inválido");
+        setCargando(false);
+        return;
       }
-    } else {
-      presupuestosGuardados = SEED_PRESUPUESTOS;
-      clientesGuardados = SEED_CLIENTES;
+
+      const presupuestoMapeado = mapPresupuesto(presupuestoData);
+      setPresupuesto(presupuestoMapeado);
+
+      const { data: clienteData } = await supabase
+        .from("clientes")
+        .select("*")
+        .eq("id", presupuestoMapeado.clienteId)
+        .single();
+
+      if (clienteData) setCliente(mapCliente(clienteData));
+      setCargando(false);
     }
 
-    // Buscar presupuesto
-    const presupuestoEncontrado = presupuestosGuardados.find((p) => p.id === presupuestoId);
-    
-    if (!presupuestoEncontrado) {
-      setError("Presupuesto no encontrado");
-      return;
-    }
+    cargarDatos();
+  }, [token]);
 
-    setPresupuesto(presupuestoEncontrado);
-
-    // Buscar cliente
-    const clienteEncontrado = clientesGuardados.find((c) => c.id === presupuestoEncontrado.clienteId);
-    if (clienteEncontrado) {
-      setCliente(clienteEncontrado);
-    }
-  }, [presupuestoId]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
-          <p className="text-4xl mb-3">❌</p>
-          <p className="text-slate-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!presupuesto || !cliente) {
+  if (cargando) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="text-center">
@@ -201,31 +124,51 @@ export default function ClientePresupuestoPublicoPage() {
     );
   }
 
-  const handleAceptar = () => {
-    setShowFirmaModal(true);
-  };
+  if (error || !presupuesto || !cliente) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
+          <p className="text-4xl mb-3">❌</p>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Enlace no válido</h2>
+          <p className="text-slate-600">{error ?? "No se encontró el presupuesto."}</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleConfirmarAceptacion = () => {
-    setPresupuesto({
-      ...presupuesto,
-      estado: "aceptado",
-      estadoFirma: "aceptado",
-      fechaFirma: new Date().toISOString().split("T")[0],
-    });
+  const handleAceptar = () => setShowFirmaModal(true);
+  const handleRechazar = () => setShowRechazoModal(true);
+
+  const handleConfirmarAceptacion = async () => {
+    if (!presupuesto) return;
+    setGuardando(true);
+    const supabase = createClient();
+    const ahora = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("presupuestos")
+      .update({ estado_firma: "aceptado", fecha_firma: ahora, estado: "aceptado" })
+      .eq("url_firma", token);
+
+    if (!updateError) {
+      setPresupuesto({ ...presupuesto, estado: "aceptado", estadoFirma: "aceptado", fechaFirma: ahora });
+    }
+    setGuardando(false);
     setShowFirmaModal(false);
   };
 
-  const handleRechazar = () => {
-    setShowRechazoModal(true);
-  };
+  const handleConfirmarRechazo = async () => {
+    if (!presupuesto) return;
+    setGuardando(true);
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("presupuestos")
+      .update({ estado_firma: "rechazado", estado: "rechazado", notas: motivos })
+      .eq("url_firma", token);
 
-  const handleConfirmarRechazo = () => {
-    setPresupuesto({
-      ...presupuesto,
-      estado: "rechazado",
-      estadoFirma: "rechazado",
-      notas: motivos,
-    });
+    if (!updateError) {
+      setPresupuesto({ ...presupuesto, estado: "rechazado", estadoFirma: "rechazado", notas: motivos });
+    }
+    setGuardando(false);
     setShowRechazoModal(false);
   };
 
@@ -233,16 +176,23 @@ export default function ClientePresupuestoPublicoPage() {
     setShowPagoModal(true);
   };
 
-  const handleConfirmarPago = () => {
-    setPresupuesto({
-      ...presupuesto,
-      estado: "aceptado",
-    });
-    setShowPagoModal(false);
-  };
-
-  const handleDescargarPDF = () => {
-    console.log("Descargando PDF del presupuesto:", presupuesto.titulo);
+  const handleDescargarPDF = async () => {
+    if (!presupuesto || !cliente) return;
+    setDescargando(true);
+    try {
+      const blob = await generarPdfPresupuesto(presupuesto, cliente);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `presupuesto-${presupuesto.titulo.replace(/\s+/g, "-")}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error generando PDF:", err);
+      alert("Error al generar el PDF. Inténtalo de nuevo.");
+    } finally {
+      setDescargando(false);
+    }
   };
 
   return (
@@ -254,7 +204,6 @@ export default function ClientePresupuestoPublicoPage() {
             <h1 className="text-3xl font-bold text-slate-900">{presupuesto.titulo}</h1>
             <div className="text-right">
               <p className="text-sm text-slate-500">De: LUCELUX</p>
-              <p className="text-sm text-slate-500">{cliente.email}</p>
             </div>
           </div>
           <p className="text-slate-600">Para: {cliente.nombre}</p>
@@ -270,16 +219,26 @@ export default function ClientePresupuestoPublicoPage() {
             <PresupuestoVistaCliente
               presupuesto={presupuesto}
               cliente={cliente}
-              pagos={MOCK_PAGOS}
+              pagos={[]}
               onAceptar={handleAceptar}
               onRechazar={handleRechazar}
               onPagar={handlePagar}
               onDescargarPDF={handleDescargarPDF}
+              descargando={descargando}
             />
 
             {/* Seguimiento de Obra */}
             {presupuesto.estadoFirma === "aceptado" && (
               <SeguimientoObra seguimiento={presupuesto.seguimiento} />
+            )}
+
+            {/* Bloque de pago tras aceptar */}
+            {presupuesto.estadoFirma === "aceptado" && (
+              <BloquePagoCliente
+                importeTotal={presupuesto.importeTotal}
+                porcentajeAdelanto={presupuesto.porcentajeAdelanto ?? 50}
+                tituloPresupuesto={presupuesto.titulo}
+              />
             )}
 
             {/* Detalles de materiales */}
@@ -381,14 +340,18 @@ export default function ClientePresupuestoPublicoPage() {
           <div className="max-w-sm mx-auto">
             <h3 className="text-lg font-bold text-slate-900 mb-4">Confirmar aceptación</h3>
             <p className="text-slate-600 mb-6">
-              Al aceptar este presupuesto, confirmas tu conformidad con las condiciones y el
-              importe total.
+              Al aceptar este presupuesto confirmas tu conformidad con las condiciones y el importe total.
             </p>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-900">
-                Adelanto requerido: <span className="font-bold">{formatearMoneda(presupuesto.importeTotal * 0.3)}</span>
-              </p>
-            </div>
+            {presupuesto.porcentajeAdelanto > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-blue-900">
+                  Adelanto requerido ({presupuesto.porcentajeAdelanto}%):{" "}
+                  <span className="font-bold">
+                    {formatearMoneda(presupuesto.importeTotal * (presupuesto.porcentajeAdelanto / 100))}
+                  </span>
+                </p>
+              </div>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFirmaModal(false)}
@@ -398,9 +361,10 @@ export default function ClientePresupuestoPublicoPage() {
               </button>
               <button
                 onClick={handleConfirmarAceptacion}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                disabled={guardando}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
               >
-                Aceptar
+                {guardando ? "Guardando..." : "Aceptar"}
               </button>
             </div>
           </div>
@@ -427,9 +391,10 @@ export default function ClientePresupuestoPublicoPage() {
               </button>
               <button
                 onClick={handleConfirmarRechazo}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition-colors"
+                disabled={guardando}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
               >
-                Rechazar
+                {guardando ? "Guardando..." : "Rechazar"}
               </button>
             </div>
           </div>
@@ -438,10 +403,8 @@ export default function ClientePresupuestoPublicoPage() {
         {/* Modal Pago */}
         <Modal isOpen={showPagoModal} onClose={() => setShowPagoModal(false)}>
           <div className="max-w-sm mx-auto">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Realizar pago</h3>
-            <p className="text-slate-600 mb-6">
-              Importe a pagar: <span className="font-bold text-lg">{formatearMoneda(presupuesto.importeTotal * 0.3)}</span>
-            </p>
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Instrucciones de pago</h3>
+            <p className="text-slate-600 mb-4">Selecciona el método de pago preferido:</p>
             <div className="space-y-3 mb-6">
               {["tarjeta", "transferencia", "bizum"].map((metodo) => (
                 <label key={metodo} className="flex items-center gap-3 border border-slate-200 rounded-lg p-3 cursor-pointer hover:bg-slate-50">
@@ -457,20 +420,12 @@ export default function ClientePresupuestoPublicoPage() {
                 </label>
               ))}
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPagoModal(false)}
-                className="flex-1 border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmarPago}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition-colors"
-              >
-                Pagar ahora
-              </button>
-            </div>
+            <button
+              onClick={() => setShowPagoModal(false)}
+              className="w-full border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold py-2 rounded-lg transition-colors"
+            >
+              Cerrar
+            </button>
           </div>
         </Modal>
       </div>
