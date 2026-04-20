@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { obtenerUsuarioActual } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
 
 /**
  * Envuelve rutas privadas para redirigir a login si no hay sesión
@@ -13,16 +13,15 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const [autenticado, setAutenticado] = useState(false);
 
   useEffect(() => {
-    const usuario = obtenerUsuarioActual();
-    
-    if (!usuario) {
-      // Sin sesión → redirigir a login
-      router.push("/login");
-    } else {
-      setAutenticado(true);
-    }
-    
-    setCargando(false);
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push("/login");
+      } else {
+        setAutenticado(true);
+      }
+      setCargando(false);
+    });
   }, [router]);
 
   if (cargando) {
