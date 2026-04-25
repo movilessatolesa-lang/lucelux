@@ -10,6 +10,7 @@ import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";
 import { generarPdfPresupuesto } from "@/lib/presupuesto-pdf";
 import { BloquePagoCliente } from "@/components/presupuestos/BloquePagoCliente";
 import type { Presupuesto, Cliente } from "@/lib/types";
+import type { ConfigPago } from "@/lib/config-pago";
 
 // Mappers snake_case → camelCase (página pública, sin auth)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -69,6 +70,7 @@ export default function ClientePresupuestoPublicoPage() {
 
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null);
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [configPago, setConfigPago] = useState<ConfigPago | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
@@ -107,6 +109,26 @@ export default function ClientePresupuestoPublicoPage() {
         .single();
 
       if (clienteData) setCliente(mapCliente(clienteData));
+
+      // Cargar configuración de pago de la empresa (política pública en Supabase)
+      const { data: configData } = await supabase
+        .from("configuracion_empresa")
+        .select("nombre_empresa, iban, telefono")
+        .eq("usuario_id", presupuestoMapeado.usuarioId)
+        .single();
+
+      if (configData) {
+        setConfigPago({
+          bizumNumero: configData.telefono ?? "",
+          bizumNombre: configData.nombre_empresa ?? "",
+          iban: configData.iban ?? "",
+          titular: configData.nombre_empresa ?? "",
+          banco: "",
+          concepto: "Adelanto presupuesto",
+          telefono: configData.telefono ?? "",
+        });
+      }
+
       setCargando(false);
     }
 
@@ -124,7 +146,7 @@ export default function ClientePresupuestoPublicoPage() {
     );
   }
 
-  if (error || !presupuesto || !cliente) {
+  if (error || !presupuesto) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="max-w-md bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -206,7 +228,7 @@ export default function ClientePresupuestoPublicoPage() {
               <p className="text-sm text-slate-500">De: LUCELUX</p>
             </div>
           </div>
-          <p className="text-slate-600">Para: {cliente.nombre}</p>
+          <p className="text-slate-600">Para: {cliente?.nombre ?? "Cliente"}</p>
           <p className="text-2xl font-bold text-blue-600 mt-2">
             {formatearMoneda(presupuesto.importeTotal)}
           </p>
@@ -218,7 +240,7 @@ export default function ClientePresupuestoPublicoPage() {
             {/* PresupuestoVistaCliente */}
             <PresupuestoVistaCliente
               presupuesto={presupuesto}
-              cliente={cliente}
+              cliente={cliente ?? { id: "", usuarioId: "", nombre: "Cliente", telefono: "", email: "", direccion: "", ciudad: "", codigoPostal: "", tipo: "particular", dniNif: "", notas: "", tags: [], recurrente: false, problematico: false, creadoEn: "" }}
               pagos={[]}
               onAceptar={handleAceptar}
               onRechazar={handleRechazar}
@@ -238,6 +260,7 @@ export default function ClientePresupuestoPublicoPage() {
                 importeTotal={presupuesto.importeTotal}
                 porcentajeAdelanto={presupuesto.porcentajeAdelanto ?? 50}
                 tituloPresupuesto={presupuesto.titulo}
+                configOverride={configPago}
               />
             )}
 

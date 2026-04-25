@@ -8,6 +8,8 @@ interface BloquePagoClienteProps {
   importeTotal: number;
   porcentajeAdelanto: number;
   tituloPresupuesto: string;
+  /** Config de pago obtenida de Supabase (página pública del cliente) */
+  configOverride?: ConfigPago | null;
 }
 
 function copiar(texto: string, setCopied: (k: string) => void, key: string) {
@@ -21,13 +23,18 @@ export function BloquePagoCliente({
   importeTotal,
   porcentajeAdelanto,
   tituloPresupuesto,
+  configOverride,
 }: BloquePagoClienteProps) {
   const [cfg, setCfg] = useState<ConfigPago | null>(null);
   const [copiado, setCopiado] = useState("");
 
   useEffect(() => {
-    setCfg(getConfigPago());
-  }, []);
+    if (configOverride) {
+      setCfg(configOverride);
+    } else {
+      setCfg(getConfigPago());
+    }
+  }, [configOverride]);
 
   if (!cfg) return null;
   if (porcentajeAdelanto === 0) return null;

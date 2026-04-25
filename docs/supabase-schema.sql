@@ -197,6 +197,33 @@ create index if not exists idx_presupuestos_cliente_id on public.presupuestos(cl
 create index if not exists idx_presupuestos_url_firma on public.presupuestos(url_firma);
 
 -- ============================================================
+-- POLÍTICAS PÚBLICAS ADICIONALES (para el enlace de cliente)
+-- ============================================================
+
+-- Permite que el cliente (sin auth) lea sus datos cuando
+-- está referenciado en un presupuesto con url_firma
+drop policy if exists "Cliente en presupuesto público" on public.clientes;
+create policy "Cliente en presupuesto público" on public.clientes
+  for select using (
+    exists (
+      select 1 from public.presupuestos
+      where presupuestos.cliente_id = clientes.id
+        and presupuestos.url_firma is not null
+    )
+  );
+
+-- Permite leer la configuración de empresa para mostrar los datos de pago
+drop policy if exists "Config empresa en presupuesto público" on public.configuracion_empresa;
+create policy "Config empresa en presupuesto público" on public.configuracion_empresa
+  for select using (
+    exists (
+      select 1 from public.presupuestos
+      where presupuestos.usuario_id = configuracion_empresa.usuario_id
+        and presupuestos.url_firma is not null
+    )
+  );
+
+-- ============================================================
 -- TABLA: trabajos
 -- ============================================================
 create table if not exists public.trabajos (
