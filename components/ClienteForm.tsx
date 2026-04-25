@@ -88,7 +88,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
                   : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50"
               }`}
             >
-              {t === "particular" ? "ðŸ‘¤ Particular" : "ðŸ¢ Empresa"}
+              {t === "particular" ? "👤 Particular" : "🏢 Empresa"}
             </button>
           ))}
         </div>
@@ -96,7 +96,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
 
       {/* Nombre */}
       <div>
-        <label className={labelCls}>Nombre / RazÃ³n social *</label>
+        <label className={labelCls}>Nombre / Razón social *</label>
         <input
           required
           value={form.nombre}
@@ -106,10 +106,10 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
         />
       </div>
 
-      {/* TelÃ©fono + Email */}
+      {/* Teléfono + Email */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>TelÃ©fono</label>
+          <label className={labelCls}>Teléfono</label>
           <input
             type="tel"
             value={form.telefono}
@@ -130,14 +130,14 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
         </div>
       </div>
 
-      {/* DirecciÃ³n */}
+      {/* Dirección */}
       <div>
-        <label className={labelCls}>DirecciÃ³n</label>
+        <label className={labelCls}>Dirección</label>
         <input
           value={form.direccion}
           onChange={(e) => set("direccion", e.target.value)}
           className={inputCls}
-          placeholder="Calle, nÃºmero, piso"
+          placeholder="Calle, número, piso"
         />
       </div>
 
@@ -153,7 +153,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
           />
         </div>
         <div>
-          <label className={labelCls}>CÃ³digo postal</label>
+          <label className={labelCls}>Código postal</label>
           <input
             value={form.codigoPostal}
             onChange={(e) => set("codigoPostal", e.target.value)}
@@ -185,7 +185,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
               : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
           }`}
         >
-          â™»ï¸ Recurrente
+          ♻️ Recurrente
         </button>
         <button
           type="button"
@@ -196,7 +196,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
               : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
           }`}
         >
-          âš ï¸ ProblemÃ¡tico
+          ⚠️ Problemático
         </button>
       </div>
 
@@ -217,7 +217,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
                   className="text-slate-400 hover:text-slate-700 leading-none ml-0.5"
                   aria-label={`Eliminar etiqueta ${tag}`}
                 >
-                  Ã—
+                  ×
                 </button>
               </span>
             ))}
@@ -234,7 +234,7 @@ export function ClienteForm({ initial, onSave, onCancel }: Props) {
               }
             }}
             className={inputCls + " flex-1"}
-            placeholder="ej. VIP, obra, urgenteâ€¦"
+            placeholder="ej. VIP, obra, urgente…"
           />
           <button
             type="button"
