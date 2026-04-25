@@ -338,3 +338,38 @@ drop trigger if exists trg_config_empresa_modificado_en on public.configuracion_
 create trigger trg_config_empresa_modificado_en
   before update on public.configuracion_empresa
   for each row execute procedure public.set_modificado_en();
+
+-- ============================================================
+-- TRIGGER: crear trabajo automáticamente al aceptar presupuesto
+-- Se activa cuando el cliente firma (estado_firma pasa a 'aceptado')
+-- ============================================================
+create or replace function public.auto_crear_trabajo_al_aceptar()
+returns trigger language plpgsql security definer set search_path = public
+as $$
+begin
+  if new.estado_firma = 'aceptado' and (old.estado_firma is distinct from 'aceptado') then
+    if not exists (select 1 from public.trabajos where presupuesto_id = new.id) then
+      insert into public.trabajos (
+        usuario_id, cliente_id, presupuesto_id, descripcion,
+        precio, adelanto, estado, estado_cobro, fecha
+      ) values (
+        new.usuario_id,
+        new.cliente_id,
+        new.id,
+        new.titulo,
+        new.importe_total,
+        round(new.importe_total * new.porcentaje_adelanto / 100, 2),
+        'aprobado',
+        'sin_adelanto',
+        current_date
+      );
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_auto_trabajo_al_aceptar on public.presupuestos;
+create trigger trg_auto_trabajo_al_aceptar
+  after update on public.presupuestos
+  for each row execute procedure public.auto_crear_trabajo_al_aceptar();

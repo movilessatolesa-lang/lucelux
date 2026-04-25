@@ -45,6 +45,7 @@ export interface Trabajo {
   id: string;
   usuarioId: string; // Aislar datos por usuario
   clienteId: string;
+  presupuestoId?: string;
   descripcion: string;
   medidas: string;
   precio: number;

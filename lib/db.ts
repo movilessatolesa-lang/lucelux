@@ -244,6 +244,7 @@ export async function createTrabajo(
     .insert({
       usuario_id: user.id,
       cliente_id: trabajo.clienteId,
+      presupuesto_id: trabajo.presupuestoId ?? null,
       descripcion: trabajo.descripcion,
       medidas: trabajo.medidas,
       precio: trabajo.precio,
@@ -424,6 +425,7 @@ function mapTrabajo(row: any): Trabajo {
     id: row.id,
     usuarioId: row.usuario_id,
     clienteId: row.cliente_id,
+    presupuestoId: row.presupuesto_id ?? undefined,
     descripcion: row.descripcion,
     medidas: row.medidas ?? "",
     precio: Number(row.precio ?? 0),
