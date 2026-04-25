@@ -398,19 +398,19 @@ export default function ClienteDetailPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-slate-50 px-2 py-2">
+                    <div className="rounded-xl bg-slate-50 px-2 py-2 flex flex-col items-center justify-center">
                       <p className="text-[9px] text-slate-400 font-medium uppercase">Total</p>
                       <p className="text-xs font-bold text-slate-700 mt-0.5">
                         {t.precio > 0 ? fmt(t.precio) + "€" : "—"}
                       </p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 px-2 py-2">
-                      <p className="text-[9px] text-slate-400 font-medium uppercase">Cobrado</p>
+                    <div className="rounded-xl bg-slate-50 px-2 py-2 flex flex-col items-center justify-center">
+                      <p className="text-[9px] text-slate-400 font-medium uppercase">Adelanto</p>
                       <p className="text-xs font-bold text-amber-600 mt-0.5">
                         {t.adelanto > 0 ? fmt(t.adelanto) + "€" : "—"}
                       </p>
                     </div>
-                    <div className="rounded-xl bg-slate-50 px-2 py-2">
+                    <div className="rounded-xl bg-slate-50 px-2 py-2 flex flex-col items-center justify-center">
                       <p className="text-[9px] text-slate-400 font-medium uppercase">Pendiente</p>
                       <p
                         className={`text-xs font-bold mt-0.5 ${
@@ -460,10 +460,10 @@ export default function ClienteDetailPage() {
                 className="bg-white border border-slate-200 rounded-2xl px-4 py-3 flex items-center justify-between gap-3"
               >
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-800 text-sm">{p.descripcion}</p>
+                  <p className="font-medium text-slate-800 text-sm">{p.titulo}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {p.fecha}
-                    {p.notas ? " · " + p.notas : ""}
+                    {p.descripcion ? " · " + p.descripcion : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

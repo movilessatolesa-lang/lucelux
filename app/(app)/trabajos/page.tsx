@@ -253,7 +253,7 @@ function TrabajoForm({ initial, clientes, onSave, onCancel }: FormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className={labelCls}>Horario inicio</label>
+          <label className={labelCls}>Hora de inicio</label>
           <input
             type="time"
             value={form.horaInicio ?? ""}
@@ -262,7 +262,7 @@ function TrabajoForm({ initial, clientes, onSave, onCancel }: FormProps) {
           />
         </div>
         <div>
-          <label className={labelCls}>Horario fin</label>
+          <label className={labelCls}>Hora de fin</label>
           <input
             type="time"
             value={form.horaFin ?? ""}
@@ -452,15 +452,15 @@ export default function TrabajosPage() {
                 </div>
                 {/* Importes */}
                 <div className="grid grid-cols-3 gap-2 mb-3">
-                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Total</p>
                     <p className="text-sm font-bold text-slate-800 mt-0.5">{t.precio > 0 ? `${fmt(t.precio)} €` : "—"}</p>
                   </div>
-                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Adelanto</p>
                     <p className="text-sm font-bold text-amber-600 mt-0.5">{t.adelanto > 0 ? `${fmt(t.adelanto)} €` : "—"}</p>
                   </div>
-                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 text-center">
+                  <div className="rounded-xl bg-slate-50 border border-slate-100 px-3 py-2 flex flex-col items-center justify-center text-center">
                     <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Pendiente</p>
                     <p className={`text-sm font-bold mt-0.5 ${pendiente > 0 ? "text-red-500" : "text-green-600"}`}>
                       {t.precio > 0 ? `${fmt(pendiente)} €` : "—"}

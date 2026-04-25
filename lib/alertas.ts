@@ -67,7 +67,7 @@ export function generarAlertas(
 
     const whatsappMsg =
       baseUrl
-        ? `Hola ${nombre.split(" ")[0]} 👋, le escribimos desde LUCELUX para recordarle el presupuesto "${p.titulo}" que le enviamos hace ${dias} días. Puede revisarlo aquí:\n${baseUrl}/presupuestos/${p.id}/cliente\n\n¿Tiene alguna duda o le podemos ayudar en algo? Quedamos a su disposición.`
+        ? `Hola ${nombre.split(" ")[0]} 👋, le escribimos desde LUCELUX para recordarle el presupuesto "${p.titulo}" que le enviamos hace ${dias} días. Puede revisarlo aquí:\n${baseUrl}/presupuestos/${p.urlFirma ?? p.id}/cliente\n\n¿Tiene alguna duda o le podemos ayudar en algo? Quedamos a su disposición.`
         : `Hola ${nombre.split(" ")[0]} 👋, le escribimos desde LUCELUX para saber si ha tenido oportunidad de revisar el presupuesto "${p.titulo}" que le enviamos hace ${dias} días. ¿Tiene alguna duda o le podemos ayudar en algo? Quedamos a su disposición.`;
 
     alertas.push({
@@ -100,7 +100,7 @@ export function generarAlertas(
 
     const whatsappMsg =
       baseUrl
-        ? `Hola ${nombre.split(" ")[0]} 👋, le contactamos de LUCELUX. El presupuesto "${p.titulo}" venció hace ${dias} día${dias !== 1 ? "s" : ""}. Si todavía está interesado/a, puede consultarlo aquí:\n${baseUrl}/presupuestos/${p.id}/cliente\n\nCon mucho gusto le preparamos uno actualizado. ¡No dude en escribirnos!`
+        ? `Hola ${nombre.split(" ")[0]} 👋, le contactamos de LUCELUX. El presupuesto "${p.titulo}" venció hace ${dias} día${dias !== 1 ? "s" : ""}. Si todavía está interesado/a, puede consultarlo aquí:\n${baseUrl}/presupuestos/${p.urlFirma ?? p.id}/cliente\n\nCon mucho gusto le preparamos uno actualizado. ¡No dude en escribirnos!`
         : `Hola ${nombre.split(" ")[0]} 👋, le contactamos de LUCELUX. El presupuesto "${p.titulo}" venció hace ${dias} día${dias !== 1 ? "s" : ""}. Si todavía está interesado/a, con mucho gusto le preparamos uno actualizado. ¡No dude en escribirnos!`;
 
     alertas.push({
