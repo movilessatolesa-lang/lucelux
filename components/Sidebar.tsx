@@ -21,6 +21,14 @@ const NAV_ITEMS = [
   { href: "/config-pago", label: "Config. Pago", icon: "⚙️" },
 ];
 
+const NAV_ITEMS_BUSINESS = [
+  { href: "/equipo", label: "Equipo", icon: "👥" },
+];
+
+const NAV_ITEMS_ADMIN = [
+  { href: "/admin", label: "Panel Admin", icon: "🛡️" },
+];
+
 function PlanBadge({ suscripcion }: { suscripcion: Suscripcion }) {
   const plan = suscripcion.plan;
   const dias = plan === "trial" ? diasRestantesTrial(suscripcion) : null;
@@ -32,6 +40,30 @@ function PlanBadge({ suscripcion }: { suscripcion: Suscripcion }) {
   if (plan === "trial" && (dias ?? 0) > 0)
     return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">Trial · {dias}d</span>;
   return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-300">{labelPlan(plan)}</span>;
+}
+
+function NavLink({ item, pathname }: { item: { href: string; label: string; icon: string }; pathname: string }) {
+  const active = pathname.startsWith(item.href);
+  return (
+    <Link
+      href={item.href}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150"
+      style={
+        active
+          ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
+          : { color: "rgba(255,255,255,0.75)" }
+      }
+      onMouseEnter={(e) => {
+        if (!active) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+      }}
+      onMouseLeave={(e) => {
+        if (!active) e.currentTarget.style.background = "transparent";
+      }}
+    >
+      <span className="text-base leading-none">{item.icon}</span>
+      {item.label}
+    </Link>
+  );
 }
 
 export default function Sidebar() {
@@ -86,82 +118,42 @@ export default function Sidebar() {
         />
       </div>
 
-      <nav className="flex-1 py-4 space-y-0.5 px-3">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
-              style={
-                active
-                  ? {
-                      background: "#3b82f6",
-                      color: "#ffffff",
-                      boxShadow: "0 2px 8px rgba(59,130,246,0.45)",
-                    }
-                  : { color: "rgba(255,255,255,0.75)" }
-              }
-              onMouseEnter={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!active) {
-                  e.currentTarget.style.background = "transparent";
-                }
-              }}
-            >
-              <span className="text-base leading-none">{item.icon}</span>
-              {item.label}
-            </Link>
-          );
-        })}
+      <nav className="flex-1 py-3 overflow-y-auto px-3 space-y-1">
 
-        {/* Equipo — solo visible en plan Business */}
-        {suscripcion?.plan === "business" && (
-          <Link
-            href="/equipo"
-            className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
-            style={
-              pathname.startsWith("/equipo")
-                ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
-                : { color: "rgba(255,255,255,0.75)" }
-            }
-            onMouseEnter={(e) => {
-              if (!pathname.startsWith("/equipo")) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-            }}
-            onMouseLeave={(e) => {
-              if (!pathname.startsWith("/equipo")) e.currentTarget.style.background = "transparent";
-            }}
-          >
-            <span className="text-base leading-none">👥</span>
-            Equipo
-          </Link>
+        {/* ── Superadmin ─────────────────────────────── */}
+        {esSuperadmin && (
+          <div className="mb-1">
+            <p className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+              Superadmin
+            </p>
+            {NAV_ITEMS_ADMIN.map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} />
+            ))}
+            <div className="my-2 border-t border-white/10" />
+          </div>
         )}
 
-        {/* Admin — solo visible para superadmins */}
-        {esSuperadmin && (
-          <Link
-            href="/admin"
-            className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
-            style={
-              pathname.startsWith("/admin")
-                ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
-                : { color: "rgba(255,255,255,0.75)" }
-            }
-            onMouseEnter={(e) => {
-              if (!pathname.startsWith("/admin")) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-            }}
-            onMouseLeave={(e) => {
-              if (!pathname.startsWith("/admin")) e.currentTarget.style.background = "transparent";
-            }}
-          >
-            <span className="text-base leading-none">🛡️</span>
-            Admin
-          </Link>
+        {/* ── Mi empresa ─────────────────────────────── */}
+        <div>
+          <p className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+            Mi empresa
+          </p>
+          {NAV_ITEMS.map((item) => (
+            <NavLink key={item.href} item={item} pathname={pathname} />
+          ))}
+        </div>
+
+        {/* ── Equipo (solo Business) ──────────────────── */}
+        {suscripcion?.plan === "business" && (
+          <div className="mt-1">
+            <div className="my-2 border-t border-white/10" />
+            <p className="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-widest" style={{ color: "#94a3b8" }}>
+              Equipo
+            </p>
+            {NAV_ITEMS_BUSINESS.map((item) => (
+              <NavLink key={item.href} item={item} pathname={pathname} />
+            ))}
+          </div>
         )}
       </nav>
 
