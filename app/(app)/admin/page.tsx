@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
-interface EmpresaStats {
+// Tipo devuelto por /api/admin/usuarios
+type EmpresaStats = {
   id: string;
   nombre: string;
   email: string;
@@ -16,7 +17,7 @@ interface EmpresaStats {
     estado: string;
     trial_fin: string;
   } | null;
-}
+};
 
 function diasRestantes(fechaFin: string): number {
   const diff = new Date(fechaFin).getTime() - Date.now();
@@ -58,32 +59,10 @@ export default function AdminPage() {
       if (!perfil?.es_superadmin) { setAcceso("denegado"); setCargando(false); return; }
       setAcceso("ok");
 
-      // Cargar todos los perfiles con sus suscripciones
-      const { data: perfiles } = await supabase
-        .from("perfiles")
-        .select("id, nombre, empresa, creado_en, onboarding_completado")
-        .order("creado_en", { ascending: false });
-
-      const { data: suscripciones } = await supabase
-        .from("suscripciones")
-        .select("usuario_id, plan, estado, trial_fin");
-
-      const { data: usuarios } = await supabase.auth.admin.listUsers();
-
-      const lista: EmpresaStats[] = (perfiles ?? []).map((p) => {
-        const sus = suscripciones?.find((s) => s.usuario_id === p.id) ?? null;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const u = (usuarios as any)?.users?.find((u: any) => u.id === p.id);
-        return {
-          id: p.id,
-          nombre: p.nombre ?? "—",
-          email: u?.email ?? "—",
-          empresa: p.empresa ?? "—",
-          onboarding_completado: p.onboarding_completado ?? false,
-          creado_en: p.creado_en,
-          suscripcion: sus ? { plan: sus.plan, estado: sus.estado, trial_fin: sus.trial_fin } : null,
-        };
-      });
+      // Cargar datos via API route (usa service role)
+      const resp = await fetch("/api/admin/usuarios");
+      if (!resp.ok) { setAcceso("denegado"); setCargando(false); return; }
+      const lista: EmpresaStats[] = await resp.json();
 
       setEmpresas(lista);
       setCargando(false);
