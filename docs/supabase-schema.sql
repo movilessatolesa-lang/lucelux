@@ -373,3 +373,29 @@ drop trigger if exists trg_auto_trabajo_al_aceptar on public.presupuestos;
 create trigger trg_auto_trabajo_al_aceptar
   after update on public.presupuestos
   for each row execute procedure public.auto_crear_trabajo_al_aceptar();
+
+-- ============================================================
+-- TABLA: recordatorios_enviados
+-- Registra cada WhatsApp automático enviado por el cron job,
+-- evitando reenvíos dentro del periodo de cadencia por tipo.
+-- ============================================================
+create table if not exists public.recordatorios_enviados (
+  id          uuid default gen_random_uuid() primary key,
+  usuario_id  uuid references auth.users(id) on delete cascade,
+  entidad_id  text not null,        -- uuid del presupuesto o trabajo origen
+  tipo        text not null,        -- 'presupuesto_sin_respuesta' | 'presupuesto_vencido' | 'cobro_pendiente' | 'garantia_revision'
+  cliente_id  uuid references public.clientes(id) on delete set null,
+  telefono    text not null,
+  mensaje     text default '',
+  exito       boolean default false,
+  enviado_en  timestamptz default now()
+);
+
+create index if not exists idx_recordatorios_lookup
+  on public.recordatorios_enviados(tipo, entidad_id, enviado_en);
+
+alter table public.recordatorios_enviados enable row level security;
+
+drop policy if exists "Recordatorios propios" on public.recordatorios_enviados;
+create policy "Recordatorios propios" on public.recordatorios_enviados
+  for all using (auth.uid() = usuario_id);

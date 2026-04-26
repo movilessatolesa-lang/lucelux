@@ -1,7 +1,7 @@
 "use client";
 
 import type { LineaPresupuesto } from "@/lib/types";
-import { calcularTotalLinea, calcularSubtotalCoste, calcularMargenLinea, formatearMoneda } from "@/lib/presupuesto-utils";
+import { calcularTotalLinea, calcularSubtotalCoste, formatearMoneda } from "@/lib/presupuesto-utils";
 
 interface Step4CostesProps {
   lineas: LineaPresupuesto[];

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
@@ -30,9 +31,11 @@ function MobileHeader() {
     >
       {/* Logo real */}
       <div className="flex items-center gap-2">
-        <img
+        <Image
           src="/logo-lucelux.jpg"
           alt="Lucelux"
+          width={130}
+          height={36}
           className="h-9 w-auto object-contain"
           style={{ maxWidth: 130 }}
         />

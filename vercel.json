@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/recordatorios/procesar",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}

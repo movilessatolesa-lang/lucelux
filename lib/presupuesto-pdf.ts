@@ -75,6 +75,7 @@ function crearHtmlPresupuesto(
   logoUrl?: string
 ): HTMLElement {
   const div = document.createElement("div");
+  const resolvedLogoUrl = logoUrl || "/logo-lucelux.jpg";
   div.style.cssText =
     "width: 210mm; padding: 20px; font-family: Arial, sans-serif; color: #333;";
 
@@ -87,7 +88,7 @@ function crearHtmlPresupuesto(
   div.innerHTML = `
     <div style="margin-bottom: 30px; border-bottom: 3px solid #1558d4; padding-bottom: 15px; display: flex; align-items: center; gap: 24px;">
       <div style="flex-shrink:0;">
-        <img src='/logo-lucelux.jpg' alt='Logo Lucelux' style='height: 80px; border-radius: 8px; box-shadow: 0 2px 8px #0001;'/>
+        <img src='${resolvedLogoUrl}' alt='Logo Lucelux' style='height: 80px; border-radius: 8px; box-shadow: 0 2px 8px #0001;'/>
       </div>
       <div style="flex:1;">
         <h1 style="margin: 0; color: #1558d4; font-size: 32px; font-weight: bold; letter-spacing: 1px;">LUCELUX <span style='color:#666;font-weight:normal;'>Carpintería de Aluminio</span></h1>

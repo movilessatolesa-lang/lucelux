@@ -198,18 +198,16 @@ export default function AnaliticaPage() {
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
 
-  const { totalFacturado, totalCobrado, totalPendiente, trabajosTerminados } = useMemo(() => {
+  const { totalFacturado, totalCobrado, totalPendiente } = useMemo(() => {
     let totalFacturado = 0;
     let totalCobrado = 0;
-    let trabajosTerminados = 0;
     for (const t of misTrabajos) {
       totalFacturado += t.precio;
       totalCobrado += t.adelanto;
       if (t.estadoCobro === "pagado") totalCobrado = totalCobrado - t.adelanto + t.precio;
-      if (t.estado === "terminado") trabajosTerminados++;
     }
     const totalPendiente = Math.max(0, totalFacturado - totalCobrado);
-    return { totalFacturado, totalCobrado, totalPendiente, trabajosTerminados };
+    return { totalFacturado, totalCobrado, totalPendiente };
   }, [misTrabajos]);
 
   const conversionRate = useMemo(() => {

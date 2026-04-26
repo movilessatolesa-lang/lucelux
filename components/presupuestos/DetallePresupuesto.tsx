@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import type { Presupuesto, Cliente, HitoSeguimiento } from "@/lib/types";
 import { createPlantilla } from "@/lib/db";
 import { formatearMoneda, formatearFecha } from "@/lib/presupuesto-utils";

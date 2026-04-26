@@ -17,7 +17,6 @@ interface PresupuestoVistaClienteProps {
 
 export function PresupuestoVistaCliente({
   presupuesto,
-  cliente,
   pagos = [],
   onAceptar,
   onRechazar,

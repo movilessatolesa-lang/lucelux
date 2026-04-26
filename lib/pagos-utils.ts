@@ -1,9 +1,12 @@
-import type { Presupuesto, Pago, Factura } from "@/lib/types";
+import type { Pago, Presupuesto } from "@/lib/types";
 
 /**
  * Calcula el importe del adelanto (ej: 30% del total)
  */
-export function calcularImporteAdelanto(importeTotal: number, porcentaje: number = 30): number {
+export function calcularImporteAdelanto(
+  importeTotal: number,
+  porcentaje: number = 30
+): number {
   return importeTotal * (porcentaje / 100);
 }
 
@@ -15,8 +18,8 @@ export function calcularSaldoPendiente(
   pagosProcesados: Pago[]
 ): number {
   const pagado = pagosProcesados
-    .filter((p) => p.estado === "completado")
-    .reduce((sum, p) => sum + p.importe, 0);
+    .filter((pago) => pago.estado === "completado")
+    .reduce((sum, pago) => sum + pago.importe, 0);
 
   return Math.max(0, importeTotal - pagado);
 }
@@ -25,13 +28,19 @@ export function calcularSaldoPendiente(
  * Valida si un presupuesto puede pasar a siguiente etapa de pago
  */
 export function puedeAceptarPresupuesto(presupuesto: Presupuesto): boolean {
-  return presupuesto.estado === "enviado" && presupuesto.estadoFirma !== "aceptado";
+  return (
+    presupuesto.estado === "enviado" &&
+    presupuesto.estadoFirma !== "aceptado"
+  );
 }
 
 /**
  * Genera número de factura único
  */
-export function generarNumeroFactura(numeroActual: number, año: number = 2026): string {
+export function generarNumeroFactura(
+  numeroActual: number,
+  año: number = 2026
+): string {
   return `FAC-${año}-${String(numeroActual).padStart(4, "0")}`;
 }
 
@@ -50,10 +59,13 @@ export function calcularDiasMora(fechaVencimiento: string): number {
  * Genera resumen de pagos para dashboard
  */
 export function resumenPagos(presupuestos: Presupuesto[], pagos: Pago[]) {
-  const totalFacturado = presupuestos.reduce((sum, p) => sum + p.importeTotal, 0);
+  const totalFacturado = presupuestos.reduce(
+    (sum, presupuesto) => sum + presupuesto.importeTotal,
+    0
+  );
   const totalCobrado = pagos
-    .filter((p) => p.estado === "completado")
-    .reduce((sum, p) => sum + p.importe, 0);
+    .filter((pago) => pago.estado === "completado")
+    .reduce((sum, pago) => sum + pago.importe, 0);
   const totalPendiente = totalFacturado - totalCobrado;
 
   return {
@@ -74,7 +86,7 @@ export async function enviarConfirmacionPago(
   importe: number
 ): Promise<boolean> {
   try {
-    console.log(`📧 Email enviado a ${emailCliente}`);
+    console.log(`📧 Email enviado a ${emailCliente} (${nombreCliente})`);
     console.log(`   Asunto: Pago recibido - ${presupuesto.titulo}`);
     console.log(
       `   Importe: ${importe.toLocaleString("es-ES", {
@@ -99,8 +111,8 @@ export async function enviarRecordatorioVencimiento(
   diasRestantes: number
 ): Promise<boolean> {
   try {
-    console.log(`📧 Recordatorio enviado a ${emailCliente}`);
-    console.log(`   Vence en ${diasRestantes} días`);
+    console.log(`📧 Recordatorio enviado a ${emailCliente} (${nombreCliente})`);
+    console.log(`   ${presupuesto.titulo} vence en ${diasRestantes} días`);
     return true;
   } catch (error) {
     console.error("Error al enviar recordatorio:", error);

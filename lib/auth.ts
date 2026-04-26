@@ -15,12 +15,6 @@ function hashPassword(password: string): string {
   return Buffer.from(`${password}_salt_${Date.now()}`).toString("base64");
 }
 
-// Verificar password (solo para MVP)
-function verifyPassword(password: string, hash: string): boolean {
-  // En MVP, simplemente verificar si el hash contiene el password
-  return hash.includes(Buffer.from(password).toString("base64").substring(0, 10));
-}
-
 // Obtener todos los usuarios del localStorage
 export function obtenerUsuarios(): Usuario[] {
   if (typeof window === "undefined") return [];

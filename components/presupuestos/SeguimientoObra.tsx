@@ -31,7 +31,6 @@ export function SeguimientoObra({ seguimiento = [], editable = false, onUpdateEs
     );
   }
 
-  const ultimoEstado = seguimiento[seguimiento.length - 1];
   const porcentajeComplecion = Math.round((seguimiento.filter((h) => h.completado).length / seguimiento.length) * 100);
 
   return (

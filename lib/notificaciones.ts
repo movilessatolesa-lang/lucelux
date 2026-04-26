@@ -38,7 +38,9 @@ function construirMensaje(
   const etapa = Object.entries(ETAPAS_INFO).find(([, v]) => v.titulo === titulo);
   const emoji = etapa ? etapa[1].emoji : "📧";
 
-  let mensaje = `${emoji} ${titulo}\n\n`;
+  let mensaje = clienteNombre
+    ? `Hola ${clienteNombre},\n\n${emoji} ${titulo}\n\n`
+    : `${emoji} ${titulo}\n\n`;
   mensaje += `${descripcion}\n`;
   if (notas) {
     mensaje += `\n📝 Nota: ${notas}\n`;
@@ -71,7 +73,7 @@ export async function enviarNotificacionSeguimiento(
 
   const textoMensaje = construirMensaje(
     etapaInfo.titulo,
-    hito.descripcion,
+    hito.descripcion ?? etapaInfo.titulo,
     hito.notas,
     clienteNombre
   );

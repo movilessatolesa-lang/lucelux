@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { Presupuesto, HitoSeguimiento, EstadoSeguimiento, Cliente } from "@/lib/types";
-import { enviarNotificacionSeguimiento } from "@/lib/notificaciones";
 
 interface SeguimientoObraAdminProps {
   presupuesto: Presupuesto;
@@ -43,6 +42,46 @@ export function SeguimientoObraAdmin({ presupuesto, cliente, onUpdate }: Seguimi
     });
   };
 
+  // Centraliza guardado en DB + envío de WhatsApp en un solo endpoint
+  const guardarSeguimiento = async (nuevoSeguimiento: HitoSeguimiento[]) => {
+    setEnviandoNotificacion(true);
+    try {
+      const res = await fetch(`/api/presupuestos/${presupuesto.id}/seguimiento`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seguimiento: nuevoSeguimiento }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setNotificacionStatus({ tipo: "error", mensaje: data.error ?? "Error al guardar" });
+        return false;
+      }
+
+      // Actualizar estado local
+      onUpdate(nuevoSeguimiento);
+
+      // Mostrar resultado de la(s) notificación(es)
+      const notifs: { exito: boolean; mensaje: string }[] = data.notificaciones ?? [];
+      if (notifs.length > 0) {
+        const fallidas = notifs.filter((n) => !n.exito);
+        if (fallidas.length === 0) {
+          setNotificacionStatus({ tipo: "exito", mensaje: `✅ WhatsApp enviado (${notifs.length} estado${notifs.length > 1 ? "s" : ""})` });
+        } else {
+          setNotificacionStatus({ tipo: "error", mensaje: `❌ Guardado, pero error al enviar WhatsApp: ${fallidas[0].mensaje}` });
+        }
+        setTimeout(() => setNotificacionStatus(null), 4000);
+      }
+      return true;
+    } catch {
+      setNotificacionStatus({ tipo: "error", mensaje: "Error de conexión" });
+      return false;
+    } finally {
+      setEnviandoNotificacion(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!editingId || !editData) return;
 
@@ -57,28 +96,11 @@ export function SeguimientoObraAdmin({ presupuesto, cliente, onUpdate }: Seguimi
       h.id === editingId ? hitoActualizado : h
     );
 
-    onUpdate(nuevoSeguimiento);
-
-    // Enviar notificación al cliente si aceptamos o cambia estado
-    if (cliente?.telefono && hitoActualizado.completado && hitoActualizado.completado !== seguimiento.find((h) => h.id === editingId)?.completado) {
-      setEnviandoNotificacion(true);
-      const resultado = await enviarNotificacionSeguimiento(
-        cliente.telefono,
-        hitoActualizado,
-        cliente.nombre
-      );
-      setNotificacionStatus({
-        tipo: resultado.exito ? 'exito' : 'error',
-        mensaje: resultado.mensaje,
-      });
-      setEnviandoNotificacion(false);
-
-      // Limpiar mensaje después de 4 segundos
-      setTimeout(() => setNotificacionStatus(null), 4000);
+    const ok = await guardarSeguimiento(nuevoSeguimiento);
+    if (ok) {
+      setEditingId(null);
+      setEditData(null);
     }
-
-    setEditingId(null);
-    setEditData(null);
   };
 
   const handleMarkAsCompleted = async (index: number) => {
@@ -88,25 +110,7 @@ export function SeguimientoObraAdmin({ presupuesto, cliente, onUpdate }: Seguimi
       fecha: i <= index && !h.fecha ? new Date().toISOString().split("T")[0] : h.fecha,
     }));
 
-    onUpdate(nuevoSeguimiento);
-
-    // Enviar notificación al cliente
-    if (cliente?.telefono && nuevoSeguimiento[index]) {
-      setEnviandoNotificacion(true);
-      const resultado = await enviarNotificacionSeguimiento(
-        cliente.telefono,
-        nuevoSeguimiento[index],
-        cliente.nombre
-      );
-      setNotificacionStatus({
-        tipo: resultado.exito ? 'exito' : 'error',
-        mensaje: resultado.mensaje,
-      });
-      setEnviandoNotificacion(false);
-
-      // Limpiar mensaje después de 4 segundos
-      setTimeout(() => setNotificacionStatus(null), 4000);
-    }
+    await guardarSeguimiento(nuevoSeguimiento);
   };
 
   if (!seguimiento || seguimiento.length === 0) {
