@@ -150,3 +150,31 @@ export async function enviarNotificacionHito(
   const msg = construirMensajeHito(hito, clienteNombre);
   return enviarWhatsApp(telefono, msg);
 }
+
+/**
+ * Envía una solicitud de reseña en Google al cliente cuando el trabajo se marca como terminado.
+ * Requiere la variable de entorno GOOGLE_PLACE_ID.
+ */
+export async function enviarSolicitudResena(
+  telefono: string,
+  clienteNombre?: string,
+  empresaNombre?: string
+): Promise<{ exito: boolean; mensaje: string }> {
+  if (!telefono) return { exito: false, mensaje: "Sin teléfono registrado" };
+
+  const placeId = process.env.GOOGLE_PLACE_ID;
+  if (!placeId) {
+    console.warn("[notif-server] GOOGLE_PLACE_ID no configurado, omitiendo reseña");
+    return { exito: false, mensaje: "GOOGLE_PLACE_ID no configurado" };
+  }
+
+  const enlace = `https://search.google.com/local/writereview?placeid=${placeId}`;
+  const nombre = clienteNombre ? clienteNombre.split(" ")[0] : null;
+  const empresa = empresaNombre ?? "LUCELUX";
+
+  const msg = nombre
+    ? `Hola ${nombre} 👋\n\nTu trabajo con ${empresa} ha quedado terminado. ¡Esperamos que estés muy contento con el resultado!\n\nSi tienes un momento, nos ayudaría mucho que nos dejaras una reseña en Google:\n👉 ${enlace}\n\n¡Muchas gracias!`
+    : `Hola 👋\n\nTu trabajo con ${empresa} ha quedado terminado. ¡Esperamos que estés muy contento con el resultado!\n\nSi tienes un momento, nos ayudaría mucho que nos dejaras una reseña en Google:\n👉 ${enlace}\n\n¡Muchas gracias!`;
+
+  return enviarWhatsApp(telefono, msg);
+}

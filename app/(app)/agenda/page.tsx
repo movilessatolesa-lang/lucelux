@@ -554,9 +554,25 @@ export default function AgendaPage() {
   }, []);
 
   const handleUpdateTrabajo = useCallback(async (id: string, data: Partial<Trabajo>) => {
+    // Si el estado cambia a "terminado", usar el endpoint que envía la reseña
+    if (data.estado === "terminado") {
+      const actual = trabajos.find((t) => t.id === id);
+      if (actual?.estado !== "terminado") {
+        await fetch(`/api/trabajos/${id}/estado`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: "terminado" }),
+        });
+        const sinEstado = { ...data } as Partial<Trabajo>;
+        delete sinEstado.estado;
+        if (Object.keys(sinEstado).length > 0) await dbUpdateTrabajo(id, sinEstado);
+        setTrabajos((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
+        return;
+      }
+    }
     await dbUpdateTrabajo(id, data);
     setTrabajos((prev) => prev.map((t) => (t.id === id ? { ...t, ...data } : t)));
-  }, []);
+  }, [trabajos]);
 
   const [drawerTrabajo, setDrawerTrabajo] = useState<Trabajo | null>(null);
   const closeDrawer = useCallback(() => setDrawerTrabajo(null), []);

@@ -387,7 +387,19 @@ export default function TrabajosPage() {
 
   async function handleSave(data: Omit<Trabajo, "id" | "creadoEn">) {
     if (mode === "edit" && editing) {
-      await dbUpdateTrabajo(editing.id, data);
+      // Si el estado cambia a "terminado", usar el endpoint que envía la reseña
+      if (data.estado === "terminado" && editing.estado !== "terminado") {
+        await fetch(`/api/trabajos/${editing.id}/estado`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado: "terminado" }),
+        });
+        const sinEstado = { ...data } as Partial<typeof data>;
+        delete sinEstado.estado;
+        if (Object.keys(sinEstado).length > 0) await dbUpdateTrabajo(editing.id, sinEstado);
+      } else {
+        await dbUpdateTrabajo(editing.id, data);
+      }
       setTrabajos((prev) => prev.map((t) => (t.id === editing.id ? { ...t, ...data } : t)));
     } else {
       const nuevo = await createTrabajo(data);
