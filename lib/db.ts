@@ -14,6 +14,8 @@ import type {
   Trabajo,
   PlantillaPresupuesto,
   Material,
+  Factura,
+  ConfiguracionEmpresa,
 } from "@/lib/types";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -454,4 +456,193 @@ function mapPlantilla(row: any): PlantillaPresupuesto {
     ivaGlobalPredeterminado: Number(row.iva_global_predeterminado ?? 21),
     creadoEn: row.creado_en,
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapConfigEmpresa(row: any): ConfiguracionEmpresa {
+  return {
+    id: row.id,
+    usuarioId: row.usuario_id,
+    nombreEmpresa: row.nombre_empresa ?? "",
+    dniNif: row.dni_nif ?? "",
+    telefono: row.telefono ?? "",
+    email: row.email ?? "",
+    direccion: row.direccion ?? "",
+    ciudad: row.ciudad ?? "",
+    codigoPostal: row.codigo_postal ?? "",
+    iban: row.iban ?? undefined,
+    ccc: row.ccc ?? undefined,
+    numeroFacturaActual: Number(row.numero_factura_actual ?? 1),
+    porcentajeAdelanto: Number(row.porcentaje_adelanto ?? 50),
+    diasVencimientoPresupuesto: Number(row.dias_vencimiento_presupuesto ?? 30),
+    diasVencimientoFactura: Number(row.dias_vencimiento_factura ?? 15),
+    stripeApiKey: row.stripe_api_key ?? undefined,
+    sendgridApiKey: row.sendgrid_api_key ?? undefined,
+    creadoEn: row.creado_en,
+    modificadoEn: row.modificado_en ?? undefined,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapFactura(row: any): Factura {
+  return {
+    id: row.id,
+    usuarioId: row.usuario_id,
+    numero: row.numero,
+    presupuestoId: row.presupuesto_id ?? undefined,
+    trabajoId: row.trabajo_id ?? "",
+    clienteId: row.cliente_id,
+    lineas: row.lineas ?? [],
+    subtotal: Number(row.subtotal ?? 0),
+    descuento: Number(row.descuento ?? 0),
+    iva: Number(row.iva ?? 21),
+    total: Number(row.total ?? 0),
+    estado: row.estado,
+    fechaEmision: row.fecha_emision,
+    fechaVencimiento: row.fecha_vencimiento ?? "",
+    fechaPago: row.fecha_pago ?? undefined,
+    creadoEn: row.creado_en,
+    modificadoEn: row.modificado_en ?? undefined,
+  };
+}
+
+// ── CONFIGURACION EMPRESA ─────────────────────────────────────────────────────
+
+export async function getConfigEmpresa(): Promise<ConfiguracionEmpresa | null> {
+  const { data: { user } } = await supabase().auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase()
+    .from("configuracion_empresa")
+    .select("*")
+    .eq("usuario_id", user.id)
+    .single();
+
+  if (error) return null;
+  return mapConfigEmpresa(data);
+}
+
+export async function upsertConfigEmpresa(
+  config: Partial<Omit<ConfiguracionEmpresa, "id" | "usuarioId" | "creadoEn" | "modificadoEn">>
+): Promise<ConfiguracionEmpresa> {
+  const { data: { user } } = await supabase().auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const payload: Record<string, unknown> = { usuario_id: user.id };
+  if (config.nombreEmpresa !== undefined) payload.nombre_empresa = config.nombreEmpresa;
+  if (config.dniNif !== undefined) payload.dni_nif = config.dniNif;
+  if (config.telefono !== undefined) payload.telefono = config.telefono;
+  if (config.email !== undefined) payload.email = config.email;
+  if (config.direccion !== undefined) payload.direccion = config.direccion;
+  if (config.ciudad !== undefined) payload.ciudad = config.ciudad;
+  if (config.codigoPostal !== undefined) payload.codigo_postal = config.codigoPostal;
+  if (config.iban !== undefined) payload.iban = config.iban;
+  if (config.numeroFacturaActual !== undefined) payload.numero_factura_actual = config.numeroFacturaActual;
+  if (config.porcentajeAdelanto !== undefined) payload.porcentaje_adelanto = config.porcentajeAdelanto;
+  if (config.diasVencimientoPresupuesto !== undefined) payload.dias_vencimiento_presupuesto = config.diasVencimientoPresupuesto;
+  if (config.diasVencimientoFactura !== undefined) payload.dias_vencimiento_factura = config.diasVencimientoFactura;
+
+  const { data, error } = await supabase()
+    .from("configuracion_empresa")
+    .upsert(payload, { onConflict: "usuario_id" })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapConfigEmpresa(data);
+}
+
+// ── FACTURAS ──────────────────────────────────────────────────────────────────
+
+export async function getFacturas(): Promise<Factura[]> {
+  const { data, error } = await supabase()
+    .from("facturas")
+    .select("*")
+    .order("creado_en", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(mapFactura);
+}
+
+export async function getFactura(id: string): Promise<Factura | null> {
+  const { data, error } = await supabase()
+    .from("facturas")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return mapFactura(data);
+}
+
+export async function createFactura(
+  factura: Omit<Factura, "id" | "usuarioId" | "numero" | "creadoEn" | "modificadoEn">
+): Promise<Factura> {
+  const { data: { user } } = await supabase().auth.getUser();
+  if (!user) throw new Error("No autenticado");
+
+  const config = await getConfigEmpresa();
+  const n = config?.numeroFacturaActual ?? 1;
+  const year = new Date().getFullYear();
+  const numero = `FAC-${year}-${String(n).padStart(3, "0")}`;
+
+  const { data, error } = await supabase()
+    .from("facturas")
+    .insert({
+      usuario_id: user.id,
+      numero,
+      presupuesto_id: factura.presupuestoId ?? null,
+      trabajo_id: factura.trabajoId || null,
+      cliente_id: factura.clienteId,
+      lineas: factura.lineas,
+      subtotal: factura.subtotal,
+      descuento: factura.descuento,
+      iva: factura.iva,
+      total: factura.total,
+      estado: factura.estado,
+      fecha_emision: factura.fechaEmision,
+      fecha_vencimiento: factura.fechaVencimiento || null,
+      fecha_pago: factura.fechaPago ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  await supabase()
+    .from("configuracion_empresa")
+    .update({ numero_factura_actual: n + 1 })
+    .eq("usuario_id", user.id);
+
+  return mapFactura(data);
+}
+
+export async function updateFactura(
+  id: string,
+  updates: Partial<Factura>
+): Promise<Factura> {
+  const payload: Record<string, unknown> = {};
+  if (updates.estado !== undefined) payload.estado = updates.estado;
+  if (updates.fechaPago !== undefined) payload.fecha_pago = updates.fechaPago;
+  if (updates.fechaVencimiento !== undefined) payload.fecha_vencimiento = updates.fechaVencimiento;
+  if (updates.lineas !== undefined) payload.lineas = updates.lineas;
+  if (updates.subtotal !== undefined) payload.subtotal = updates.subtotal;
+  if (updates.descuento !== undefined) payload.descuento = updates.descuento;
+  if (updates.iva !== undefined) payload.iva = updates.iva;
+  if (updates.total !== undefined) payload.total = updates.total;
+
+  const { data, error } = await supabase()
+    .from("facturas")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return mapFactura(data);
+}
+
+export async function deleteFactura(id: string): Promise<void> {
+  const { error } = await supabase().from("facturas").delete().eq("id", id);
+  if (error) throw new Error(error.message);
 }

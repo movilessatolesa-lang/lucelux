@@ -206,6 +206,24 @@ const MORE_NAV: MoreItem[] = [
     renderIcon: (a) => <IconFileText color={a ? ACTIVE : "#1558d4"} sw={a ? 2.2 : 1.8} />,
   },
   {
+    href: "/facturas",
+    label: "Facturas",
+    description: "Emite y cobra facturas",
+    available: true,
+    iconBg: "#f0fdf4",
+    renderIcon: (a: boolean) => (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+        stroke={a ? ACTIVE : "#16a34a"} strokeWidth={a ? 2.2 : 1.8}
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 2H6a1 1 0 00-1 1v18a1 1 0 001 1h12a1 1 0 001-1V8l-5-5z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="9" y1="13" x2="15" y2="13" />
+        <line x1="9" y1="17" x2="15" y2="17" />
+        <line x1="9" y1="9" x2="10" y2="9" />
+      </svg>
+    ),
+  },
+  {
     href: "/agenda",
     label: "Agenda",
     description: "Instalaciones programadas",
