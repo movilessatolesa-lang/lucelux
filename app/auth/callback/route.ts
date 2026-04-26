@@ -31,7 +31,26 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      // Si viene con next explícito, ir allí
+      if (next !== "/dashboard") {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+
+      // Comprobar si el onboarding está completado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: perfil } = await supabase
+          .from("perfiles")
+          .select("onboarding_completado")
+          .eq("id", user.id)
+          .single();
+
+        if (!perfil || perfil.onboarding_completado === false) {
+          return NextResponse.redirect(`${origin}/onboarding`);
+        }
+      }
+
+      return NextResponse.redirect(`${origin}/dashboard`);
     }
   }
 

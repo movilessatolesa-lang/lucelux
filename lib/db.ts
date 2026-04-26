@@ -646,3 +646,63 @@ export async function deleteFactura(id: string): Promise<void> {
   const { error } = await supabase().from("facturas").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+// ===================== EQUIPO =====================
+
+export interface Equipo {
+  id: string;
+  ownerId: string;
+  nombre: string;
+  creadoEn: string;
+}
+
+export interface MiembroEquipo {
+  id: string;
+  equipoId: string;
+  usuarioId: string;
+  rol: "admin" | "miembro";
+  invitadoEn: string;
+  nombre?: string;
+}
+
+export async function getEquipo(): Promise<Equipo | null> {
+  const sb = supabase();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await sb
+    .from("equipos")
+    .select("id, owner_id, nombre, creado_en")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return { id: data.id, ownerId: data.owner_id, nombre: data.nombre, creadoEn: data.creado_en };
+}
+
+export async function getMiembros(equipoId: string): Promise<MiembroEquipo[]> {
+  const { data, error } = await supabase()
+    .from("miembros_equipo")
+    .select("id, equipo_id, usuario_id, rol, invitado_en, perfiles(nombre)")
+    .eq("equipo_id", equipoId);
+
+  if (error || !data) return [];
+  return data.map((m) => ({
+    id: m.id,
+    equipoId: m.equipo_id,
+    usuarioId: m.usuario_id,
+    rol: m.rol as "admin" | "miembro",
+    invitadoEn: m.invitado_en,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    nombre: (m as any).perfiles?.nombre ?? undefined,
+  }));
+}
+
+export async function eliminarMiembro(miembroId: string): Promise<void> {
+  const { error } = await supabase()
+    .from("miembros_equipo")
+    .delete()
+    .eq("id", miembroId);
+  if (error) throw new Error(error.message);
+}
+

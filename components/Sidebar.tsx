@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getSuscripcion, diasRestantesTrial, labelPlan, type Suscripcion } from "@/lib/suscripcion";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "⊞" },
@@ -20,19 +21,45 @@ const NAV_ITEMS = [
   { href: "/config-pago", label: "Config. Pago", icon: "⚙️" },
 ];
 
+function PlanBadge({ suscripcion }: { suscripcion: Suscripcion }) {
+  const plan = suscripcion.plan;
+  const dias = plan === "trial" ? diasRestantesTrial(suscripcion) : null;
+
+  if (plan === "business")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300">Business</span>;
+  if (plan === "pro")
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300">Pro</span>;
+  if (plan === "trial" && (dias ?? 0) > 0)
+    return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300">Trial · {dias}d</span>;
+  return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-300">{labelPlan(plan)}</span>;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [userName, setUserName] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [suscripcion, setSuscripcion] = useState<Suscripcion | null>(null);
+  const [esSuperadmin, setEsSuperadmin] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         setUserEmail(user.email ?? null);
         setUserName(user.user_metadata?.nombre ?? user.email?.split("@")[0] ?? null);
+
+        const { data: perfil } = await supabase
+          .from("perfiles")
+          .select("es_superadmin")
+          .eq("id", user.id)
+          .single();
+        setEsSuperadmin(perfil?.es_superadmin ?? false);
       }
+    });
+
+    getSuscripcion().then((sus) => {
+      if (sus) setSuscripcion(sus);
     });
   }, []);
 
@@ -92,15 +119,69 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Equipo — solo visible en plan Business */}
+        {suscripcion?.plan === "business" && (
+          <Link
+            href="/equipo"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
+            style={
+              pathname.startsWith("/equipo")
+                ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
+                : { color: "rgba(255,255,255,0.75)" }
+            }
+            onMouseEnter={(e) => {
+              if (!pathname.startsWith("/equipo")) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname.startsWith("/equipo")) e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <span className="text-base leading-none">👥</span>
+            Equipo
+          </Link>
+        )}
+
+        {/* Admin — solo visible para superadmins */}
+        {esSuperadmin && (
+          <Link
+            href="/admin"
+            className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-150"
+            style={
+              pathname.startsWith("/admin")
+                ? { background: "#3b82f6", color: "#ffffff", boxShadow: "0 2px 8px rgba(59,130,246,0.45)" }
+                : { color: "rgba(255,255,255,0.75)" }
+            }
+            onMouseEnter={(e) => {
+              if (!pathname.startsWith("/admin")) e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+            }}
+            onMouseLeave={(e) => {
+              if (!pathname.startsWith("/admin")) e.currentTarget.style.background = "transparent";
+            }}
+          >
+            <span className="text-base leading-none">🛡️</span>
+            Admin
+          </Link>
+        )}
       </nav>
 
       <div className="px-4 py-4 space-y-3 border-t border-white/15">
         {userName && (
-          <div className="text-sm space-y-1">
+          <div className="text-sm space-y-1.5">
             <p className="text-white font-semibold truncate">{userName}</p>
             <p className="text-[11px]" style={{ color: "#94a3b8" }}>
               {userEmail}
             </p>
+            {suscripcion && (
+              <div className="flex items-center gap-1.5">
+                <PlanBadge suscripcion={suscripcion} />
+                {suscripcion.plan !== "pro" && suscripcion.plan !== "business" && (
+                  <Link href="/pricing" className="text-[10px] text-blue-400 hover:text-blue-300 transition-colors">
+                    Ver planes →
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         )}
 
